@@ -99,48 +99,49 @@ export default function ThreeDSpreadsheet({
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)]">
+    <div className="flex h-[calc(100vh-8rem)] bg-gray-50">
       {/* Main Content */}
       <div className="flex-1 relative">
         {/* Menu Button */}
         <button 
           onClick={toggleSidebar}
           className={`
-            fixed top-6 transition-all duration-300 ease-in-out
-            ${isSidebarOpen ? 'left-6' : 'left-6'}
-            z-50 p-2.5 rounded-lg hover:bg-gray-100 bg-white shadow-sm
+            fixed top-8 transition-all duration-300 ease-in-out
+            ${isSidebarOpen ? 'left-8' : 'left-8'}
+            z-50 p-3 rounded-xl hover:bg-gray-100 bg-white shadow-sm
             hover:shadow-md active:shadow-sm active:translate-y-[1px]
+            border border-gray-200/60
           `}
         >
           <div className="space-y-1.5">
-            <div className="w-5 h-0.5 bg-gray-600"></div>
-            <div className="w-5 h-0.5 bg-gray-600"></div>
-            <div className="w-5 h-0.5 bg-gray-600"></div>
+            <div className="w-5 h-0.5 bg-gray-500"></div>
+            <div className="w-5 h-0.5 bg-gray-500"></div>
+            <div className="w-5 h-0.5 bg-gray-500"></div>
           </div>
         </button>
 
         {/* Spreadsheet Layout */}
         <div className={`
           relative w-full h-full transition-all duration-300
-          ${isSidebarOpen ? 'pl-72' : ''}
-          pt-20 pr-6
+          ${isSidebarOpen ? 'pl-80' : ''}
+          pt-24 px-8
         `}>
           {/* Sidebar */}
           <div className={`
-            fixed left-0 top-0 h-full bg-white shadow-lg transition-all duration-300 transform
+            fixed left-0 top-0 h-full bg-white shadow-xl transition-all duration-300 transform
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            w-64 border-r border-gray-200 z-40
+            w-72 border-r border-gray-200/80 z-40
           `}>
-            <div className="p-6 pt-24">
-              <h2 className="text-xl font-bold mb-6 text-gray-800">Spreadsheets</h2>
-              <ul className="space-y-2">
+            <div className="p-8 pt-28">
+              <h2 className="text-xl font-semibold mb-6 text-gray-800">Spreadsheets</h2>
+              <ul className="space-y-2.5">
                 {sheetNames.map((name, index) => (
                   <li 
                     key={index}
                     className={`
-                      p-3 rounded-lg cursor-pointer transition-all duration-150
+                      p-3.5 rounded-lg cursor-pointer transition-all duration-150
                       ${activeSheet === index 
-                        ? 'bg-blue-50 text-blue-700 font-medium shadow-sm' 
+                        ? 'bg-indigo-50 text-indigo-700 font-medium shadow-sm border border-indigo-100' 
                         : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
                       }
                     `}
@@ -179,7 +180,7 @@ export default function ThreeDSpreadsheet({
                   `}
                   style={{
                     transform: isSidebarOpen
-                      ? `translate(${stackOrder * 32}px, ${-stackOrder * 16}px)`
+                      ? `translate(${stackOrder * 40}px, ${-stackOrder * 20}px)`
                       : isActive
                         ? 'none'
                         : `translate(${(index - activeSheet) * 100}%, 0)`,
@@ -190,16 +191,20 @@ export default function ThreeDSpreadsheet({
                   }}
                 >
                   <div className={`
-                    bg-white rounded-lg overflow-hidden
+                    bg-white rounded-xl overflow-hidden
                     ${!isActive 
-                      ? 'shadow-md hover:shadow-lg' 
-                      : 'shadow-lg'
+                      ? 'shadow-md hover:shadow-lg border border-gray-200/60' 
+                      : 'shadow-lg border border-gray-200/80'
                     } 
                     transition-all duration-300
                   `}>
                     {/* Sheet Name Header */}
                     <div 
-                      className="px-4 py-3 border-b border-gray-200 bg-gray-50"
+                      className={`
+                        px-6 py-4 border-b border-gray-200/80 
+                        ${isActive ? 'bg-white' : 'bg-gray-50/50'}
+                        transition-colors duration-300
+                      `}
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingName(index);
@@ -212,12 +217,14 @@ export default function ThreeDSpreadsheet({
                           onChange={(e) => handleSheetNameChange(index, e.target.value)}
                           onKeyDown={handleSheetNameKeyDown}
                           onBlur={() => setEditingName(null)}
-                          className="w-full px-2 py-1 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="w-full px-3 py-1.5 rounded-lg border border-indigo-300 
+                            focus:outline-none focus:ring-2 focus:ring-indigo-400/30
+                            text-gray-700 font-medium bg-white"
                           autoFocus
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <h3 className="font-medium text-gray-700 cursor-text">
+                        <h3 className="font-medium text-gray-700 cursor-text px-1">
                           {sheetNames[index]}
                         </h3>
                       )}
