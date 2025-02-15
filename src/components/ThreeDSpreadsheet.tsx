@@ -7,12 +7,14 @@ interface ThreeDSpreadsheetProps {
   initialSheets?: number;
   initialRows?: number;
   initialCols?: number;
+  maxVisibleSheets?: number;
 }
 
 export default function ThreeDSpreadsheet({ 
   initialSheets = 3, 
   initialRows = 10, 
-  initialCols = 5 
+  initialCols = 5,
+  maxVisibleSheets = 3
 }: ThreeDSpreadsheetProps) {
   const [activeSheet, setActiveSheet] = useState(0);
   const [sheetData, setSheetData] = useState<Array<Array<Array<{ value: string; row: number; col: number }>>>>([]);
@@ -21,6 +23,7 @@ export default function ThreeDSpreadsheet({
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [editingName, setEditingName] = useState<number | null>(null);
+  const [deleteModalSheet, setDeleteModalSheet] = useState<number | null>(null);
 
   // Initialize the sheets and headers
   useEffect(() => {
@@ -94,8 +97,62 @@ export default function ThreeDSpreadsheet({
     if (index === activeSheet) {
       return 0;
     }
+
+    // Calculate relative position from active sheet
+    const relativePosition = index - activeSheet;
     
-    return index < activeSheet ? index + 1 : index;
+    // If sheet is before active sheet or too far after, don't show in stack
+    if (relativePosition < 0 || relativePosition >= maxVisibleSheets) {
+      return -1;
+    }
+    
+    return relativePosition;
+  };
+
+  const isSheetVisible = (index: number, isActive: boolean, stackOrder: number) => {
+    if (!isSidebarOpen) {
+      return isActive;
+    }
+
+    // Show if it's the active sheet or within the visible stack range
+    return stackOrder >= 0 && stackOrder < maxVisibleSheets;
+  };
+
+  const handleAddSheet = () => {
+    // Create new empty sheet
+    const newSheet = Array(initialRows).fill(null).map((_, rowIndex) =>
+      Array(initialCols).fill(null).map((_, colIndex) => ({
+        value: '',
+        row: rowIndex,
+        col: colIndex,
+      }))
+    );
+
+    // Add new sheet to data
+    setSheetData([...sheetData, newSheet]);
+
+    // Add new sheet name
+    const newSheetNumber = sheetData.length + 1;
+    setSheetNames([...sheetNames, `Sheet ${newSheetNumber}`]);
+  };
+
+  const handleDeleteSheet = (index: number) => {
+    const newSheetData = [...sheetData];
+    newSheetData.splice(index, 1);
+    setSheetData(newSheetData);
+
+    const newSheetNames = [...sheetNames];
+    newSheetNames.splice(index, 1);
+    setSheetNames(newSheetNames);
+
+    // Adjust active sheet if needed
+    if (activeSheet >= newSheetData.length) {
+      setActiveSheet(Math.max(0, newSheetData.length - 1));
+    } else if (activeSheet === index) {
+      setActiveSheet(Math.max(0, index - 1));
+    }
+
+    setDeleteModalSheet(null);
   };
 
   return (
@@ -132,9 +189,9 @@ export default function ThreeDSpreadsheet({
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             w-72 border-r border-gray-200/80 z-40
           `}>
-            <div className="p-8 pt-28">
+            <div className="p-8 pt-28 flex flex-col h-full">
               <h2 className="text-xl font-semibold mb-6 text-gray-800">Spreadsheets</h2>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2.5 flex-1 overflow-y-auto">
                 {sheetNames.map((name, index) => (
                   <li 
                     key={index}
@@ -144,13 +201,43 @@ export default function ThreeDSpreadsheet({
                         ? 'bg-indigo-50 text-indigo-700 font-medium shadow-sm border border-indigo-100' 
                         : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
                       }
+                      group flex items-center justify-between
                     `}
-                    onClick={() => handleSidebarSheetClick(index)}
                   >
-                    {name}
+                    <span onClick={() => handleSidebarSheetClick(index)}>
+                      {name}
+                    </span>
+                    {sheetData.length > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteModalSheet(index);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                          p-1.5 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
+              
+              {/* Add Sheet Button */}
+              <button
+                onClick={handleAddSheet}
+                className="mt-4 p-3.5 w-full rounded-lg bg-indigo-50 text-indigo-600 
+                  hover:bg-indigo-100 transition-colors duration-150 font-medium
+                  border border-indigo-100 flex items-center justify-center gap-2
+                  hover:shadow-sm active:translate-y-[1px]"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Sheet
+              </button>
             </div>
           </div>
 
@@ -162,6 +249,7 @@ export default function ThreeDSpreadsheet({
             {sheetData.map((sheet, index) => {
               const isActive = activeSheet === index;
               const stackOrder = getStackOrder(index, isActive);
+              const visible = isSheetVisible(index, isActive, stackOrder);
               
               return (
                 <div
@@ -175,19 +263,23 @@ export default function ThreeDSpreadsheet({
                     ${!isSidebarOpen ? (
                       isActive ? 'opacity-100' : 'opacity-0'
                     ) : (
-                      'opacity-100 cursor-pointer hover:opacity-95'
+                      visible ? 'opacity-100 cursor-pointer hover:opacity-95' : 'opacity-0 pointer-events-none'
                     )}
                   `}
                   style={{
                     transform: isSidebarOpen
-                      ? `translate(${stackOrder * 40}px, ${-stackOrder * 20}px)`
+                      ? stackOrder >= 0
+                        ? `translate(${stackOrder * 40}px, ${-stackOrder * 20}px)`
+                        : 'translate(-100%, 0)'
                       : isActive
                         ? 'none'
                         : `translate(${(index - activeSheet) * 100}%, 0)`,
-                    zIndex: isSidebarOpen ? 30 - stackOrder : isActive ? 30 : -1,
+                    zIndex: isSidebarOpen 
+                      ? stackOrder >= 0 ? 30 - stackOrder : -1 
+                      : isActive ? 30 : -1,
                     left: 0,
                     top: 0,
-                    pointerEvents: isTransitioning ? 'none' : 'auto'
+                    pointerEvents: isTransitioning || !visible ? 'none' : 'auto'
                   }}
                 >
                   <div className={`
@@ -241,7 +333,46 @@ export default function ThreeDSpreadsheet({
                 </div>
               );
             })}
+
+            {/* Stack Count Indicator */}
+            {isSidebarOpen && sheetData.length > maxVisibleSheets && (
+              <div 
+                className="absolute right-4 top-4 px-3 py-1.5 bg-gray-800/80 text-white 
+                  rounded-full text-sm font-medium backdrop-blur-sm"
+              >
+                {sheetData.length - maxVisibleSheets} more
+              </div>
+            )}
           </div>
+
+          {/* Delete Confirmation Modal */}
+          {deleteModalSheet !== null && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+              <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Sheet</h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete "{sheetNames[deleteModalSheet]}"? This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setDeleteModalSheet(null)}
+                    className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 
+                      font-medium transition-colors duration-150"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeleteSheet(deleteModalSheet)}
+                    className="px-4 py-2 rounded-lg bg-red-500 text-white 
+                      hover:bg-red-600 font-medium transition-colors duration-150
+                      shadow-sm hover:shadow active:translate-y-[1px]"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
