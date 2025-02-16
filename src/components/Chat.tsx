@@ -1,24 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 interface Message {
+  id: string;
   content: string;
   role: 'user' | 'system';
   timestamp: number;
 }
 
 interface ToolCall {
-  type: 'findall_sheets';
+  type: 'findall_sheets' | 'update_headers';
   params: {
-    query: string;
+    query?: string;
+    headers?: string[];
   };
 }
 
 interface ChatProps {
   onClose: () => void;
   onCreateSheet?: (name: string) => void;
+  onUpdateHeaders?: (headers: string[]) => void;
 }
 
-export default function Chat({ onClose, onCreateSheet }: ChatProps) {
+export default function Chat({ onClose, onCreateSheet, onUpdateHeaders }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,12 +61,14 @@ export default function Chat({ onClose, onCreateSheet }: ChatProps) {
 
             // Add a message about the created sheets
             setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
               content: `I've created ${data.results.length} new sheets based on the search results.`,
               role: 'system',
               timestamp: Date.now(),
             }]);
           } else {
             setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
               content: 'I couldn\'t find any matching results to create sheets from.',
               role: 'system',
               timestamp: Date.now(),
@@ -72,7 +77,28 @@ export default function Chat({ onClose, onCreateSheet }: ChatProps) {
         } catch (error) {
           console.error('Error executing findall_sheets:', error);
           setMessages(prev => [...prev, {
+            id: crypto.randomUUID(),
             content: 'Sorry, there was an error while trying to create sheets from the search results.',
+            role: 'system',
+            timestamp: Date.now(),
+          }]);
+        }
+      } else if (toolCall.type === 'update_headers') {
+        try {
+          if (toolCall.params.headers) {
+            onUpdateHeaders?.(toolCall.params.headers);
+            setMessages(prev => [...prev, {
+              id: crypto.randomUUID(),
+              content: 'I\'ve updated the column headers for you.',
+              role: 'system',
+              timestamp: Date.now(),
+            }]);
+          }
+        } catch (error) {
+          console.error('Error updating column headers:', error);
+          setMessages(prev => [...prev, {
+            id: crypto.randomUUID(),
+            content: 'Sorry, there was an error while trying to update the column headers.',
             role: 'system',
             timestamp: Date.now(),
           }]);
@@ -86,6 +112,7 @@ export default function Chat({ onClose, onCreateSheet }: ChatProps) {
     if (!inputValue.trim() || isLoading) return;
 
     const newMessage: Message = {
+      id: crypto.randomUUID(),
       content: inputValue.trim(),
       role: 'user',
       timestamp: Date.now(),
@@ -109,6 +136,7 @@ export default function Chat({ onClose, onCreateSheet }: ChatProps) {
       const data = await response.json();
       
       setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
         content: data.response,
         role: 'system',
         timestamp: Date.now(),
@@ -121,6 +149,7 @@ export default function Chat({ onClose, onCreateSheet }: ChatProps) {
     } catch (error) {
       console.error('Error:', error);
       setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
         content: 'Sorry, there was an error processing your request.',
         role: 'system',
         timestamp: Date.now(),
@@ -155,9 +184,9 @@ export default function Chat({ onClose, onCreateSheet }: ChatProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, index) => (
+        {messages.map((message) => (
           <div
-            key={message.timestamp}
+            key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div

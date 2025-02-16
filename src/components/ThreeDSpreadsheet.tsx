@@ -29,6 +29,7 @@ export default function ThreeDSpreadsheet({
   const [editingName, setEditingName] = useState<number | null>(null);
   const [deleteModalSheet, setDeleteModalSheet] = useState<number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [rowHeaders, setRowHeaders] = useState<string[]>([]);
 
   // Initialize from storage or create new sheets
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function ThreeDSpreadsheet({
     setSheetIds(updatedState.entities.map(e => e.id));
     setSheetNames(updatedState.entities.map(e => e.name));
     setSheetData(updatedState.entities.map(e => storage.getEntityData(e.id)));
+    setRowHeaders(updatedState.headers);
   }, [initialSheets, initialRows, initialCols]);
 
   const handleHeaderChange = (colIndex: number, value: string) => {
@@ -459,6 +461,16 @@ export default function ThreeDSpreadsheet({
 
             // Set the new sheet as active
             setActiveSheet(sheetData.length);
+          }}
+          onUpdateHeaders={(headers) => {
+            // Update headers in storage
+            storage.updateHeaders(headers);
+            
+            // Update local state
+            setSharedHeaders(headers);
+            
+            // Refresh sheet data to reflect header changes
+            setSheetData(sheetIds.map(id => storage.getEntityData(id)));
           }}
         />
       </div>
