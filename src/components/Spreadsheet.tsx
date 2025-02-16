@@ -21,6 +21,9 @@ interface SpreadsheetProps {
   onAddColumn?: () => void;
   onAddRow?: () => void;
   onRunColumnAllSheets?: (colIndex: number, cornerValue: string) => void;
+  onDeleteColumn?: (colIndex: number) => void;
+  onDeleteRow?: (rowIndex: number) => void;
+  renderRowPrefix?: (rowIndex: number) => React.ReactNode;
 }
 
 export default function Spreadsheet({ 
@@ -35,7 +38,10 @@ export default function Spreadsheet({
   onBulkUpdate,
   onAddColumn,
   onAddRow,
-  onRunColumnAllSheets
+  onRunColumnAllSheets,
+  onDeleteColumn,
+  onDeleteRow,
+  renderRowPrefix
 }: SpreadsheetProps) {
   const [editingHeader, setEditingHeader] = useState<number | null>(null);
   const [cornerValue, setCornerValue] = useState("ID");
@@ -136,63 +142,43 @@ export default function Spreadsheet({
   }, [contextMenu]);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="border-collapse">
+    <div className="w-fit">
+      <table className="border-collapse w-fit">
         <thead>
           <tr>
-            {/* Editable Corner */}
-            <th 
-              className="min-w-[8rem] h-8 bg-gray-50 border border-gray-200 p-0 transition-colors hover:bg-gray-100"
-              onClick={handleCornerClick}
-            >
-              {isEditingCorner ? (
-                <input
-                  type="text"
-                  value={cornerValue}
-                  onChange={(e) => setCornerValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onBlur={handleBlur}
-                  className="w-full h-full px-3 text-center bg-white border-none 
-                    focus:outline-none focus:ring-2 focus:ring-indigo-400/30
-                    text-gray-700 font-medium"
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <div className="w-full h-full px-2 cursor-text text-center text-gray-600 font-medium">
-                  {cornerValue}
-                </div>
-              )}
-            </th>
             {headers.map((header, index) => (
               <th 
                 key={index} 
-                className="w-24 h-8 bg-gray-50 border border-gray-200 p-0 transition-colors hover:bg-gray-100"
-                onClick={() => handleHeaderClick(index)}
-                onContextMenu={(e) => handleContextMenu(e, undefined, index, true)}
+                className="group relative w-48 h-8 bg-gray-50 border border-gray-200 p-0 transition-colors hover:bg-gray-100"
               >
-                {editingHeader === index ? (
-                  <input
-                    type="text"
-                    value={header}
-                    onChange={(e) => handleHeaderChange(index, e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onBlur={handleBlur}
-                    className="w-full h-full px-3 text-center bg-white border-none 
-                      focus:outline-none focus:ring-2 focus:ring-indigo-400/30
-                      text-gray-700 font-medium"
-                    autoFocus
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <div className="w-full h-full px-2 cursor-text text-center text-gray-600 font-medium">
-                    {header}
+                <div className="flex items-center h-full">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={header}
+                      onChange={(e) => onHeaderChange?.(index, e.target.value)}
+                      placeholder="Enter column name..."
+                      className="w-full h-full px-3 text-center bg-transparent border-none 
+                        focus:outline-none focus:ring-2 focus:ring-indigo-400/30
+                        text-gray-700 font-medium placeholder-gray-400"
+                    />
                   </div>
-                )}
+                  {headers.length > 1 && (
+                    <button
+                      onClick={() => onDeleteColumn?.(index)}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 
+                        text-gray-400 hover:text-red-500 rounded transition-all duration-150"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </th>
             ))}
             {/* Add Column Button */}
-            <th className="w-12 h-8 bg-gray-50 border border-gray-200 p-0">
+            <th className="w-12 h-8 bg-gray-50 border border-gray-200 p-0 sticky right-0">
               <button
                 onClick={onAddColumn}
                 className="w-full h-full flex items-center justify-center text-gray-400 
@@ -207,41 +193,40 @@ export default function Spreadsheet({
         </thead>
         <tbody>
           {data.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td 
-                className="min-w-[8rem] h-8 bg-gray-50 border border-gray-200 text-gray-600 cursor-context-menu"
-                onContextMenu={(e) => handleContextMenu(e, rowIndex, 0)}
-              >
-                <input
-                  type="text"
-                  value={row[0]?.value || ''}
-                  onChange={(e) => onCellChange?.(rowIndex, 0, e.target.value)}
-                  className="w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
-                    text-gray-700 bg-transparent px-2"
-                />
-              </td>
+            <tr key={rowIndex} className="group">
               {headers.map((_, colIndex) => (
                 <td
                   key={colIndex}
-                  className="w-24 h-8 border border-gray-200 px-2"
-                  onContextMenu={(e) => handleContextMenu(e, rowIndex, colIndex + 1)}
+                  className={`w-48 h-8 border border-gray-200 px-2 ${colIndex === 0 ? 'bg-gray-50' : ''}`}
                 >
                   <input
                     type="text"
-                    value={row[colIndex + 1]?.value || ''}
-                    onChange={(e) => onCellChange?.(rowIndex, colIndex + 1, e.target.value)}
-                    className="w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
-                      text-gray-700 bg-transparent"
+                    value={row[colIndex]?.value || ''}
+                    onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
+                    className={`w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
+                      text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''}`}
                   />
                 </td>
               ))}
+              <td className="w-12 h-8 border border-gray-200 p-0 sticky right-0 bg-white">
+                <button
+                  onClick={() => onDeleteRow?.(rowIndex)}
+                  className="opacity-0 group-hover:opacity-100 w-full h-full flex items-center 
+                    justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 
+                    transition-all duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </td>
             </tr>
           ))}
           {/* Add Row Button */}
           <tr>
             <td 
-              colSpan={headers.length + 2}
-              className="h-8 border border-gray-200"
+              colSpan={headers.length + 1}
+              className="h-8 border border-gray-200 sticky bottom-0 bg-white"
             >
               <button
                 onClick={onAddRow}
@@ -256,112 +241,6 @@ export default function Spreadsheet({
           </tr>
         </tbody>
       </table>
-
-      {/* Enhanced Context Menu */}
-      {contextMenu && (
-        <div 
-          className="context-menu fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
-          style={{ 
-            left: `${contextMenu.x}px`, 
-            top: `${contextMenu.y}px`,
-            minWidth: '200px',
-            transform: 'translate(8px, -50%)',
-            position: 'fixed'
-          }}
-        >
-          {contextMenu.colIndex === 0 ? (
-            // First column context menu
-            <>
-              <div className="px-4 py-2 text-sm font-medium text-gray-500 bg-gray-50">
-                {cornerValue}
-              </div>
-              <div className="py-1 border-b border-gray-200">
-                <div className="px-4 py-1 text-xs font-medium text-gray-500">This Sheet</div>
-                <button
-                  onClick={() => handleRunColumn(0)}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Run Column
-                </button>
-              </div>
-              <div className="py-1">
-                <div className="px-4 py-1 text-xs font-medium text-gray-500">All Sheets</div>
-                <button
-                  onClick={() => handleRunColumnAllSheets(0)}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Run Column
-                </button>
-              </div>
-            </>
-          ) : (
-            // Other columns context menu
-            <>
-              <div className="px-4 py-2 text-sm font-medium text-gray-500 bg-gray-50">
-                {headers[contextMenu.colIndex ? contextMenu.colIndex - 1 : 0]}
-              </div>
-              <div className="py-1 border-b border-gray-200">
-                <div className="px-4 py-1 text-xs font-medium text-gray-500">This Sheet</div>
-                <button
-                  onClick={() => contextMenu.colIndex !== undefined && handleRunColumn(contextMenu.colIndex)}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Run Column
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM5 20a1 1 0 01-1-1v-2a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5z" />
-                  </svg>
-                  Run All Columns
-                </button>
-              </div>
-              <div className="py-1">
-                <div className="px-4 py-1 text-xs font-medium text-gray-500">All Sheets</div>
-                <button
-                  onClick={() => contextMenu.colIndex !== undefined && handleRunColumn(contextMenu.colIndex)}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Run Column
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM5 20a1 1 0 01-1-1v-2a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5z" />
-                  </svg>
-                  Run All Columns
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 } 

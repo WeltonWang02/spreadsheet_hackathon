@@ -4,19 +4,22 @@ import React, { useState, useEffect } from 'react';
 import Spreadsheet from './Spreadsheet';
 import { SpreadsheetStorage } from '@/lib/storage';
 import Chat from './Chat';
+import { throttle } from 'lodash';
 
 interface ThreeDSpreadsheetProps {
   initialSheets?: number;
   initialRows?: number;
   initialCols?: number;
   maxVisibleSheets?: number;
+  predefinedSheets?: string[];
 }
 
 export default function ThreeDSpreadsheet({ 
   initialSheets = 3, 
   initialRows = 10, 
   initialCols = 5,
-  maxVisibleSheets = 3
+  maxVisibleSheets = 3,
+  predefinedSheets = []
 }: ThreeDSpreadsheetProps) {
   const [storage] = useState(() => new SpreadsheetStorage());
   const [activeSheet, setActiveSheet] = useState(0);
@@ -31,6 +34,9 @@ export default function ThreeDSpreadsheet({
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [rowHeaders, setRowHeaders] = useState<string[]>([]);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [dragState, setDragState] = useState<{ startX: number; startY: number; originalX: number; originalY: number; nodeId: string } | null>(null);
+  const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
+  const [nodes, setNodes] = useState([]);
 
   // Initialize from storage or create new sheets
   useEffect(() => {
@@ -46,20 +52,59 @@ export default function ThreeDSpreadsheet({
 
     // Create initial sheets if none exist
     if (state.entities.length === 0) {
-      for (let i = 0; i < initialSheets; i++) {
-        const entity = storage.createEntity(`Sheet ${i + 1}`);
+      const sheetsToCreate = predefinedSheets.length > 0 ? predefinedSheets : Array(initialSheets).fill(null).map((_, i) => `Sheet ${i + 1}`);
+      
+      sheetsToCreate.forEach(name => {
+        const entity = storage.createEntity(name);
         storage.initializeEntityRows(entity.id, initialRows);
-      }
+      });
     }
 
-    // Load state
+    // Load state once after initialization
     const updatedState = storage.getState();
-    setSharedHeaders(updatedState.headers);
-    setSheetIds(updatedState.entities.map(e => e.id));
-    setSheetNames(updatedState.entities.map(e => e.name));
-    setSheetData(updatedState.entities.map(e => storage.getEntityData(e.id)));
-    setRowHeaders(updatedState.headers);
-  }, [initialSheets, initialRows, initialCols]);
+    const headers = updatedState.headers;
+    const entities = updatedState.entities;
+    
+    setSharedHeaders(headers);
+    setSheetIds(entities.map(e => e.id));
+    setSheetNames(entities.map(e => e.name));
+    setSheetData(entities.map(e => storage.getEntityData(e.id)));
+    setRowHeaders(headers);
+  }, [initialSheets, initialRows, initialCols, predefinedSheets]);
+
+  // Update sheets when predefinedSheets changes
+  useEffect(() => {
+    if (predefinedSheets.length > 0) {
+      const state = storage.getState();
+      const currentNames = new Set(state.entities.map(e => e.name));
+      let stateChanged = false;
+      
+      // Add new sheets
+      for (const name of predefinedSheets) {
+        if (!currentNames.has(name)) {
+          const entity = storage.createEntity(name);
+          storage.initializeEntityRows(entity.id, initialRows);
+          stateChanged = true;
+        }
+      }
+
+      // Remove sheets that are no longer in predefinedSheets
+      for (const entity of state.entities) {
+        if (!predefinedSheets.includes(entity.name)) {
+          storage.deleteEntity(entity.id);
+          stateChanged = true;
+        }
+      }
+
+      // Only update state if changes were made
+      if (stateChanged) {
+        const updatedState = storage.getState();
+        setSheetIds(updatedState.entities.map(e => e.id));
+        setSheetNames(updatedState.entities.map(e => e.name));
+        setSheetData(updatedState.entities.map(e => storage.getEntityData(e.id)));
+      }
+    }
+  }, [predefinedSheets, initialRows]);
 
   const handleHeaderChange = (colIndex: number, value: string) => {
     const newHeaders = [...sharedHeaders];
@@ -310,6 +355,49 @@ export default function ThreeDSpreadsheet({
       console.error('Error running column for all sheets:', error);
     }
   };
+
+  const handleMouseMove = throttleMouseMove((e: React.MouseEvent) => {
+    if (!dragState) return;
+
+    const deltaX = e.clientX - dragState.startX;
+    const deltaY = e.clientY - dragState.startY;
+
+    requestAnimationFrame(() => {
+      if (dragState.nodeId === 'canvas') {
+        setCanvasOffset({
+          x: dragState.originalX - deltaX,
+          y: dragState.originalY - deltaY
+        });
+      } else {
+        setNodes(prevNodes => prevNodes.map(node => {
+          if (node.id === dragState.nodeId) {
+            return {
+              ...node,
+              position: {
+                x: dragState.originalX + deltaX,
+                y: dragState.originalY + deltaY
+              }
+            };
+          }
+          return node;
+        }));
+      }
+    });
+  });
+
+  // Throttle function to limit update frequency
+  function throttleMouseMove(callback: (e: React.MouseEvent) => void, limit = 16) {
+    let waiting = false;
+    return (e: React.MouseEvent) => {
+      if (!waiting) {
+        callback(e);
+        waiting = true;
+        setTimeout(() => {
+          waiting = false;
+        }, limit);
+      }
+    };
+  }
 
   return (
     <div className="flex h-[calc(100vh-8rem)] bg-gray-50">
