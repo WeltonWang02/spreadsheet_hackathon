@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import Spreadsheet from '@/components/Spreadsheet';
 
 interface LLMPipeSpreadsheetProps {
-  sourceData?: Array<Array<{ value: string; row: number; col: number }>>;
+  sourceData: Array<Array<{ value: string; row: number; col: number }>>;
   onDataChange?: (data: Array<Array<{ value: string; row: number; col: number }>>) => void;
 }
 
-export function LLMPipeSpreadsheet({
-  sourceData = [],
-  onDataChange
-}: LLMPipeSpreadsheetProps) {
+export const LLMPipeSpreadsheet = forwardRef<
+  { handlePipeToLLM: () => Promise<void> },
+  LLMPipeSpreadsheetProps
+>(({ sourceData, onDataChange }, ref) => {
   const [prompt, setPrompt] = useState('');
   const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>(sourceData);
+  const [isRunning, setIsRunning] = useState(false);
 
   // Update local data when source data changes
   useEffect(() => {
     setData(sourceData);
   }, [sourceData]);
 
-  const handleRunLLM = async () => {
+  const handlePipeToLLM = async () => {
+    setIsRunning(true);
     try {
       // Call your LLM API here with the prompt and input data
       const response = await fetch('/api/llm', {
@@ -47,7 +49,12 @@ export function LLMPipeSpreadsheet({
     } catch (error) {
       console.error('Error processing through LLM:', error);
     }
+    setIsRunning(false);
   };
+
+  useImperativeHandle(ref, () => ({
+    handlePipeToLLM
+  }));
 
   return (
     <div className="bg-white border border-gray-200/80 overflow-hidden">
@@ -71,7 +78,7 @@ export function LLMPipeSpreadsheet({
             text-gray-700 placeholder-gray-400 resize-none"
         />
         <button
-          onClick={handleRunLLM}
+          onClick={handlePipeToLLM}
           className="mt-2 px-4 py-2 bg-indigo-500 text-white font-medium
             hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
             shadow-sm hover:shadow active:translate-y-[1px]"
@@ -108,4 +115,4 @@ export function LLMPipeSpreadsheet({
       </div>
     </div>
   );
-} 
+}); 

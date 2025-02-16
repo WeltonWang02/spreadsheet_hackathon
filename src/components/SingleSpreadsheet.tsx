@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import Spreadsheet from '@/components/Spreadsheet';
 
 interface SingleSpreadsheetProps {
@@ -14,14 +14,17 @@ interface SingleSpreadsheetProps {
   }>;
 }
 
-export function SingleSpreadsheet({
+export const SingleSpreadsheet = forwardRef<
+  { handleRunFind: () => Promise<void>; handleRunCells: () => Promise<void>; handleRunAggregation: () => Promise<void> },
+  SingleSpreadsheetProps
+>(({
   onRowsChanged,
   onExpandChange,
   initialData,
   aggregationCriteria,
   isAggregation,
   sourceSheets
-}: SingleSpreadsheetProps) {
+}, ref) => {
   const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>(
     initialData ? [initialData] : []
   );
@@ -36,6 +39,12 @@ export function SingleSpreadsheet({
   const [showLLMPipe, setShowLLMPipe] = useState(false);
   const [showRunDropdown, setShowRunDropdown] = useState(false);
   const [isRunningAggregation, setIsRunningAggregation] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    handleRunFind,
+    handleRunCells,
+    handleRunAggregation
+  }));
 
   const handleRunAggregation = async () => {
     if (!sourceSheets || !isAggregation) return;
@@ -425,4 +434,4 @@ export function SingleSpreadsheet({
       </div>
     </div>
   );
-} 
+}); 

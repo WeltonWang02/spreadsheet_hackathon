@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SingleSpreadsheet } from './SingleSpreadsheet';
 import ThreeDSpreadsheet from './ThreeDSpreadsheet';
 import { LLMPipeSpreadsheet } from './LLMPipeSpreadsheet';
@@ -11,6 +11,45 @@ interface WorkflowStep {
 export function WorkflowBuilder() {
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [showInitialButton, setShowInitialButton] = useState(true);
+  const [isRunningAll, setIsRunningAll] = useState(false);
+  const stepsRefs = useRef<(React.RefObject<any>)[]>([]);
+
+  // Keep refs array in sync with steps
+  useEffect(() => {
+    stepsRefs.current = workflowSteps.map((_, i) => 
+      stepsRefs.current[i] || React.createRef()
+    );
+  }, [workflowSteps.length]);
+
+  const runAll = async () => {
+    setIsRunningAll(true);
+    try {
+      for (let i = 0; i < workflowSteps.length; i++) {
+        const step = workflowSteps[i];
+        const ref = stepsRefs.current[i];
+        if (!ref?.current) continue;
+
+        if (step.type === 'single' || step.type === '3d') {
+          // For spreadsheet types that have both find and run cells
+          if (ref.current.handleRunFind) {
+            await ref.current.handleRunFind();
+          }
+          if (ref.current.handleRunCells) {
+            await ref.current.handleRunCells();
+          }
+        } else if (step.type === 'aggregation' && ref.current.handleRunAggregation) {
+          // For aggregation steps
+          await ref.current.handleRunAggregation();
+        } else if (step.type === 'llm_pipe' && ref.current.handlePipeToLLM) {
+          // For LLM pipe steps
+          await ref.current.handlePipeToLLM();
+        }
+      }
+    } catch (error) {
+      console.error('Error running all steps:', error);
+    }
+    setIsRunningAll(false);
+  };
 
   const handleCreateInitialSheet = () => {
     setWorkflowSteps([{ type: 'single', data: [] }]);
@@ -185,9 +224,69 @@ export function WorkflowBuilder() {
     );
   };
 
+  const renderStep = (step: WorkflowStep, index: number) => {
+    switch (step.type) {
+      case 'single':
+        return (
+          <div key={index} className="mb-8">
+            <SingleSpreadsheet
+              ref={stepsRefs.current[index]}
+              onRowsChanged={(newData) => handleDataChange(index, newData)}
+            />
+            {renderActionButtons(step, index)}
+          </div>
+        );
+      case '3d':
+        return (
+          <div key={index} className="mb-8">
+            <ThreeDSpreadsheet
+              ref={stepsRefs.current[index]}
+              data={step.data}
+              onDataChange={(newData) => handleDataChange(index, newData)}
+            />
+            {renderActionButtons(step, index)}
+          </div>
+        );
+      case 'aggregation':
+        return (
+          <div key={index} className="mb-8">
+            <SingleSpreadsheet
+              ref={stepsRefs.current[index]}
+              isAggregation={true}
+              aggregationCriteria="Category"
+              sourceSheets={[{ name: 'Source', data: workflowSteps[index - 1].data, columns: [] }]}
+            />
+            {renderActionButtons(step, index)}
+          </div>
+        );
+      case 'llm_pipe':
+        return (
+          <div key={index} className="mb-8">
+            <LLMPipeSpreadsheet
+              ref={stepsRefs.current[index]}
+              sourceData={workflowSteps[index - 1].data}
+            />
+            {renderActionButtons(step, index)}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8 flex flex-col items-center gap-8">
-      {/* Initial Add Button */}
+      {workflowSteps.length > 0 && (
+        <button
+          onClick={runAll}
+          disabled={isRunningAll}
+          className="mt-2 px-4 py-2 bg-indigo-500 text-white font-medium
+            hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
+            shadow-sm hover:shadow active:translate-y-[1px]"
+        >
+          {isRunningAll ? 'Running All...' : 'Run All Steps'}
+        </button>
+      )}
       {showInitialButton && (
         <button
           onClick={handleCreateInitialSheet}
@@ -206,57 +305,8 @@ export function WorkflowBuilder() {
       {/* Workflow Steps */}
       <div className="w-full max-w-[800px] flex flex-col gap-8">
         {workflowSteps.map((step, index) => (
-          <div key={index} className="w-full">
-            {step.type === 'single' && (
-              <>
-                <SingleSpreadsheet
-                  onRowsChanged={(rows) => handleDataChange(index, rows)}
-                />
-                {renderActionButtons(step, index)}
-              </>
-            )}
-            {step.type === '3d' && (
-              <>
-                <div className="w-full h-[400px]">
-                  <ThreeDSpreadsheet
-                    sourceData={step.data}
-                    isSidebarOpen={true}
-                  />
-                </div>
-                {renderActionButtons(step, index)}
-              </>
-            )}
-            {step.type === 'aggregation' && (
-              <>
-                <SingleSpreadsheet
-                  onRowsChanged={(rows) => handleDataChange(index, rows)}
-                  initialData={step.data[0]}
-                  aggregationCriteria="First Column"
-                  isAggregation={true}
-                  sourceSheets={workflowSteps[index - 1]?.data.map((row, rowIndex) => {
-                    // Get the column names from the first row's column indices
-                    const columns = row.map((cell, colIndex) => 
-                      `Column ${colIndex + 1}`
-                    );
-                    
-                    return {
-                      name: row[0]?.value || `Sheet ${rowIndex + 1}`,
-                      data: [row],
-                      columns
-                    };
-                  })}
-                />
-                {renderActionButtons(step, index)}
-              </>
-            )}
-            {step.type === 'llm_pipe' && (
-              <LLMPipeSpreadsheet
-                sourceData={step.data}
-                onDataChange={(data) => handleDataChange(index, data)}
-              />
-            )}
-          </div>
-        ))}
+          renderStep(step, index))
+        )}
       </div>
     </div>
   );

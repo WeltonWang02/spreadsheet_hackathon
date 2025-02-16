@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import Spreadsheet from './Spreadsheet';
 
 interface ThreeDSpreadsheetProps {
@@ -8,12 +8,14 @@ interface ThreeDSpreadsheetProps {
   initialCols?: number;
   sourceData?: Array<Array<{ value: string; row: number; col: number }>>;
   isSidebarOpen?: boolean;
+  data: Array<Array<{ value: string; row: number; col: number }>>;
+  onDataChange?: (data: Array<Array<{ value: string; row: number; col: number }>>) => void;
 }
 
-export default function ThreeDSpreadsheet({ 
-  sourceData = [],
-  isSidebarOpen = true
-}: ThreeDSpreadsheetProps) {
+const ThreeDSpreadsheet = forwardRef<
+  { handleRunFind: () => Promise<void>; handleRunCells: () => Promise<void> },
+  ThreeDSpreadsheetProps
+>(({ data, onDataChange }, ref) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeSheet, setActiveSheet] = useState<number | null>(null);
   const [sheetData, setSheetData] = useState<Array<Array<Array<{ value: string; row: number; col: number }>>>>([]);
@@ -22,38 +24,33 @@ export default function ThreeDSpreadsheet({
   const [showRunDropdown, setShowRunDropdown] = useState(false);
   const [title, setTitle] = useState('3D Spreadsheet');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isRunningFind, setIsRunningFind] = useState(false);
+  const [isRunningCells, setIsRunningCells] = useState(false);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const [sidebarItems, setSidebarItems] = useState<string[]>([]);
   
-  // Initialize sheet data from source data
+  // Initialize sheet data and names from source data
   useEffect(() => {
-    if (sourceData.length === 0) return;
+    if (!data || !Array.isArray(data) || data.length === 0) return;
 
     // Create sheet data for each source row
-    const newSheetData = sourceData.map(row => {
-      // Create initial data for the sheet with the source row
-    //   return [row.map(cell => ({
-    //     value: cell.value,
-    //     row: 0,
-    //     col: cell.col
-    //   }))];
-    return [];
-    });
-
+    const newSheetData = data.map(row => []);
     setSheetData(newSheetData);
-  }, [sourceData]); // Only depend on sourceData to ensure proper updates
 
-  // Get sheet headers from the complete row data of source
-  const sheetNames = sourceData.map(row => {
-    // Create an array of cells sorted by column
-    const sortedCells = [...row].sort((a, b) => a.col - b.col);
-    // Combine all cell values from the row to create the header
-    return sortedCells.find(cell => cell.col === 0)?.value || 'Untitled Sheet';
-  });
+    // Calculate sheet names from the data
+    const newSheetNames = data.map(row => {
+      const sortedCells = [...row].sort((a, b) => a.col - b.col);
+      return sortedCells.find(cell => cell.col === 0)?.value || 'Untitled Sheet';
+    });
+    setSheetNames(newSheetNames);
 
-  // Get first column values from source data for the sidebar
-  const sidebarItems = sourceData.map(row => {
-    const firstColumnCell = row.find(cell => cell.col === 0);
-    return firstColumnCell?.value || 'Untitled';
-  });
+    // Calculate sidebar items from the data
+    const newSidebarItems = data.map(row => {
+      const firstColumnCell = row.find(cell => cell.col === 0);
+      return firstColumnCell?.value || 'Untitled';
+    });
+    setSidebarItems(newSidebarItems);
+  }, [data]);
 
   // Update visible range when active sheet changes
   useEffect(() => {
@@ -140,9 +137,10 @@ export default function ThreeDSpreadsheet({
   };
 
   const handleRunFind = async () => {
+    setIsRunningFind(true);
     try {
       // For each sheet, make a findall API call
-      const promises = sourceData.map(async (sheet, sheetIndex) => {
+      const promises = data.map(async (sheet, sheetIndex) => {
         // Get the first column value as the query
         const firstColumnCell = sheet.find(cell => cell.col === 0);
         if (!firstColumnCell) return;
@@ -189,14 +187,16 @@ export default function ThreeDSpreadsheet({
       console.error('Error running search:', error);
     }
     setShowRunDropdown(false);
+    setIsRunningFind(false);
   };
 
   const handleRunCells = async () => {
+    setIsRunningCells(true);
     try {
       // For each sheet, make a runCells API call
       const promises = sheetData.map(async (sheet, sheetIndex) => {
         // Get the first column value as input from sourceData
-        const firstColumnCell = sourceData[sheetIndex]?.find(cell => cell.col === 0);
+        const firstColumnCell = data[sheetIndex]?.find(cell => cell.col === 0);
         if (!firstColumnCell) return;
 
         // Create columns object from headers
@@ -254,7 +254,13 @@ export default function ThreeDSpreadsheet({
       console.error('Error running cells:', error);
     }
     setShowRunDropdown(false);
+    setIsRunningCells(false);
   };
+
+  useImperativeHandle(ref, () => ({
+    handleRunFind,
+    handleRunCells
+  }));
 
   return (
     <div className={`
@@ -407,7 +413,7 @@ export default function ThreeDSpreadsheet({
               ? 'ml-64 w-[calc(100%-16rem)]' 
               : 'w-full'}
           `}>
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full min-h-[300px]">
               {sheetNames.length > 0 && sheetNames
                 .slice(isExpanded ? visibleRange.start : visibleRange.start, isExpanded ? visibleRange.end + 1 : visibleRange.end + 1)
                 .map((name, index) => {
@@ -483,4 +489,6 @@ export default function ThreeDSpreadsheet({
       </div>
     </div>
   );
-} 
+});
+
+export default ThreeDSpreadsheet; 
