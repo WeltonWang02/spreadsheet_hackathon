@@ -232,6 +232,19 @@ export function WorkflowBuilder() {
                   onRowsChanged={(rows) => handleDataChange(index, rows)}
                   initialData={step.data[0]}
                   aggregationCriteria="First Column"
+                  isAggregation={true}
+                  sourceSheets={workflowSteps[index - 1]?.data.map((row, rowIndex) => {
+                    // Get the column names from the first row's column indices
+                    const columns = row.map((cell, colIndex) => 
+                      `Column ${colIndex + 1}`
+                    );
+                    
+                    return {
+                      name: row[0]?.value || `Sheet ${rowIndex + 1}`,
+                      data: [row],
+                      columns
+                    };
+                  })}
                 />
                 {renderActionButtons(step, index)}
               </>
