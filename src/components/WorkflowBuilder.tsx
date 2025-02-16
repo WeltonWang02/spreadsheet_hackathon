@@ -302,11 +302,22 @@ export function WorkflowBuilder() {
           </div>
         );
       case 'llm_pipe':
+        const prevStep = workflowSteps[index - 1];
+        let headers: string[];
+        if (prevStep.type === 'single' || prevStep.type === '3d') {
+          // For single and 3D sheets, get headers from the ref
+          const prevRef = stepsRefs.current[index - 1];
+          headers = prevRef?.current?.getHeaders?.() || ['Input'];
+        } else {
+          // For aggregation, use fixed headers
+          headers = ['Category', 'Count', 'Last Updated'];
+        }
         return (
           <div key={index} className="mb-8">
             <LLMPipeSpreadsheet
               ref={stepsRefs.current[index]}
               sourceData={workflowSteps[index - 1].data}
+              headers={headers}
             />
             {renderActionButtons(step, index)}
           </div>

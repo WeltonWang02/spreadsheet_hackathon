@@ -15,7 +15,12 @@ interface SingleSpreadsheetProps {
 }
 
 export const SingleSpreadsheet = forwardRef<
-  { handleRunFind: () => Promise<void>; handleRunCells: () => Promise<void>; handleRunAggregation: () => Promise<void> },
+  { 
+    handleRunFind: () => Promise<void>; 
+    handleRunCells: () => Promise<void>; 
+    handleRunAggregation: () => Promise<void>;
+    getHeaders: () => string[];
+  },
   SingleSpreadsheetProps
 >(({
   onRowsChanged,
@@ -49,7 +54,8 @@ export const SingleSpreadsheet = forwardRef<
   useImperativeHandle(ref, () => ({
     handleRunFind,
     handleRunCells,
-    handleRunAggregation
+    handleRunAggregation,
+    getHeaders: () => headers
   }));
 
   const handleRunAggregation = async () => {

@@ -13,7 +13,11 @@ interface ThreeDSpreadsheetProps {
 }
 
 const ThreeDSpreadsheet = forwardRef<
-  { handleRunFind: () => Promise<void>; handleRunCells: () => Promise<void> },
+  { 
+    handleRunFind: () => Promise<void>; 
+    handleRunCells: () => Promise<void>;
+    getHeaders: () => string[];
+  },
   ThreeDSpreadsheetProps
 >(({ data, onDataChange }, ref) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -259,7 +263,8 @@ const ThreeDSpreadsheet = forwardRef<
 
   useImperativeHandle(ref, () => ({
     handleRunFind,
-    handleRunCells
+    handleRunCells,
+    getHeaders: () => headers
   }));
 
   return (
