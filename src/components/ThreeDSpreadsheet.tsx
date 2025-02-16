@@ -275,6 +275,42 @@ export default function ThreeDSpreadsheet({
     setSheetData(sheetIds.map(id => storage.getEntityData(id)));
   };
 
+  const handleRunColumnAllSheets = async (colIndex: number, cornerValue: string) => {
+    try {
+      // Create an array of promises for each sheet
+      const promises = sheetIds.map(async (sheetId, sheetIndex) => {
+        const response = await fetch('/api/findall', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: `${cornerValue} ${sheetNames[sheetIndex]}`,
+          }),
+        });
+
+        if (!response.ok) throw new Error(`Failed to run column search for sheet ${sheetIndex}`);
+        
+        const { results } = await response.json();
+        
+        // Create updates for this sheet
+        const updates = results.map((result: string, index: number) => ({
+          row: index,
+          col: colIndex,
+          value: result
+        }));
+
+        // Apply updates to this sheet
+        handleBulkUpdate(sheetIndex, updates);
+      });
+
+      // Wait for all API calls to complete
+      await Promise.all(promises);
+    } catch (error) {
+      console.error('Error running column for all sheets:', error);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-8rem)] bg-gray-50">
       {/* Main Content */}
@@ -477,6 +513,7 @@ export default function ThreeDSpreadsheet({
                       onBulkUpdate={(updates) => handleBulkUpdate(index, updates)}
                       onAddColumn={handleAddColumn}
                       onAddRow={handleAddRow}
+                      onRunColumnAllSheets={(colIndex, cornerValue) => handleRunColumnAllSheets(colIndex, cornerValue)}
                     />
                   </div>
                 </div>

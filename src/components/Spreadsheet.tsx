@@ -20,6 +20,7 @@ interface SpreadsheetProps {
   onBulkUpdate?: (updates: { row: number; col: number; value: string }[]) => void;
   onAddColumn?: () => void;
   onAddRow?: () => void;
+  onRunColumnAllSheets?: (colIndex: number, cornerValue: string) => void;
 }
 
 export default function Spreadsheet({ 
@@ -33,7 +34,8 @@ export default function Spreadsheet({
   isSidebarOpen,
   onBulkUpdate,
   onAddColumn,
-  onAddRow
+  onAddRow,
+  onRunColumnAllSheets
 }: SpreadsheetProps) {
   const [editingHeader, setEditingHeader] = useState<number | null>(null);
   const [cornerValue, setCornerValue] = useState("ID");
@@ -95,7 +97,8 @@ export default function Spreadsheet({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: `${cornerValue} ${headers[colIndex] || sheetName}`,
+          query: colIndex === 0 ? `${cornerValue} ${sheetName}` : `${cornerValue} ${headers[colIndex - 1]}`,
+          sheet_level: true
         }),
       });
 
@@ -116,25 +119,9 @@ export default function Spreadsheet({
     }
   };
 
-  const handleRunAllColumns = async () => {
-    try {
-      const promises = headers.map(header => 
-        fetch('/api/findall', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            query: `${cornerValue} ${header}`,
-          }),
-        })
-      );
-
-      await Promise.all(promises);
-      setContextMenu(null);
-    } catch (error) {
-      console.error('Error running all columns:', error);
-    }
+  const handleRunColumnAllSheets = (colIndex: number) => {
+    onRunColumnAllSheets?.(colIndex, cornerValue);
+    setContextMenu(null);
   };
 
   useEffect(() => {
@@ -305,7 +292,7 @@ export default function Spreadsheet({
               <div className="py-1">
                 <div className="px-4 py-1 text-xs font-medium text-gray-500">All Sheets</div>
                 <button
-                  onClick={() => handleRunColumn(0)}
+                  onClick={() => handleRunColumnAllSheets(0)}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
                     transition-colors duration-150 flex items-center gap-2"
                 >
@@ -336,19 +323,6 @@ export default function Spreadsheet({
                   </svg>
                   Run Column
                 </button>
-                <button
-                  onClick={handleRunAllColumns}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Run All Columns
-                </button>
               </div>
               <div className="py-1">
                 <div className="px-4 py-1 text-xs font-medium text-gray-500">All Sheets</div>
@@ -362,19 +336,6 @@ export default function Spreadsheet({
                       d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   Run Column
-                </button>
-                <button
-                  onClick={handleRunAllColumns}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 
-                    transition-colors duration-150 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Run All Columns
                 </button>
               </div>
             </>
