@@ -1,0 +1,61 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "cc6c3836-d810-4c8c-aacf-bcca2dadf02a",
+    "runner": "rhodium",
+    "run_id": "ec2d1317-2da1-d34f-9681-5350b185deae",
+    "input": {
+      "arguments": {
+        "query": "Financial investments"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "Stocks (ownership in companies)",
+        "Bonds (government and corporate)",
+        "Bank deposits and savings accounts",
+        "Certificates of deposit (CDs)",
+        "Money market instruments",
+        "Treasury bills",
+        "Options contracts",
+        "Futures contracts",
+        "Swaps",
+        "Forward agreements",
+        "Contracts for difference (CFDs)",
+        "Mutual funds",
+        "Exchange-traded funds (ETFs)",
+        "Real Estate Investment Trusts (REITs)",
+        "Hedge funds",
+        "Private equity funds",
+        "Investment trusts",
+        "Commodities (metals, energy, agricultural products)",
+        "Real estate properties",
+        "Precious metals",
+        "Cryptocurrencies",
+        "Fine art and collectibles",
+        "Private investments"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:55:53.277036",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/cc6c3836-d810-4c8c-aacf-bcca2dadf02a/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Financial investments\"}}"
+  },
+  "timestamp": "2025-02-16T09:55:53.664Z",
+  "expiresAt": "2025-02-17T09:55:53.664Z"
+}

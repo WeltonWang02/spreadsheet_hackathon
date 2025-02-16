@@ -219,7 +219,7 @@ const ThreeDSpreadsheet = forwardRef<
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            query: firstColumnCell.value,
+            query: `${headers[0]} for: ${firstColumnCell.value}`,
             sheet_level: true
           }),
         });

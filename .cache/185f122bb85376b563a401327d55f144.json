@@ -1,0 +1,43 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "5bf7ac99-daae-45c3-aa56-96f222090455",
+    "runner": "rhodium",
+    "run_id": "af5eeb96-4737-328c-f38e-3080f936b671",
+    "input": {
+      "arguments": {
+        "query": "Find all products for: Advanced Input Systems"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "Display Interface Products: Touchscreens, Touch Displays, OnGlass Controls, Gesture Sensing",
+        "Infection Control Products (Medigenic line): Keyboards, Mice, Custom Input devices",
+        "Immersive Products: Wearable Electronics & Exoskeleton, Robotics & Tele-robotics, Virtual Reality & Augmented Reality",
+        "HMI Solutions: Membrane switches, Elastomer Buttons & keypads, Smart Surfaces, Buttons, Joysticks, Touch Controls",
+        "Technology Solutions: Projected Capacitive touch displays (5 to 85), Display to touch screen full optical lamination bonding, Smart surfaces, Embedded computing, Wireless connectivity and charging, Printable electronics, VR/AR, Robotics, & Exoskeleton solutions"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:58:35.635098",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/5bf7ac99-daae-45c3-aa56-96f222090455/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Find all products for: Advanced Input Systems\"}}"
+  },
+  "timestamp": "2025-02-16T09:58:36.294Z",
+  "expiresAt": "2025-02-17T09:58:36.294Z"
+}

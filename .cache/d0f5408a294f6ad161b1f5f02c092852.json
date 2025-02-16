@@ -1,0 +1,47 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "990268b7-da68-4f62-b8a4-01d77b55c696",
+    "runner": "rhodium",
+    "run_id": "ab42d48e-9d62-8c5f-dc3b-00d9f4f3f37a",
+    "input": {
+      "arguments": {
+        "query": "Razer"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "Razer Inc. (Primary gaming technology company)",
+        "Razer Gold (digital payment service)",
+        "Razer Fintech (financial technology arm)",
+        "THX Inc. (acquired by Razer)",
+        "zVentures (Razer's corporate ventures arm)",
+        "Razera Wood Company LLC",
+        "Razerback Industrial, Inc.",
+        "Razer Edge L.L.C.",
+        "Regional headquarters in Hamburg and Shanghai"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:54:32.228365",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/990268b7-da68-4f62-b8a4-01d77b55c696/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Razer\"}}"
+  },
+  "timestamp": "2025-02-16T09:54:32.872Z",
+  "expiresAt": "2025-02-17T09:54:32.872Z"
+}

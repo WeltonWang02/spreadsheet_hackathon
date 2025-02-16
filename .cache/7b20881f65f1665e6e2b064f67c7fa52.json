@@ -1,0 +1,42 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "a4dfeafd-60eb-4f45-a56f-8d320c7d053b",
+    "runner": "rhodium",
+    "run_id": "00931a94-9829-8ad6-0b87-652b2a83c4d9",
+    "input": {
+      "arguments": {
+        "query": "SteelSeries"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "SteelSeries: A Danish gaming peripherals company founded in 2001, specializing in premium gaming gear including headsets, keyboards, and mice.",
+        "Parent Company: GN Store Nord A/S (acquired SteelSeries in 2021 for DKK 8.0 billion)",
+        "Subsidiaries: A-Volute (French software company, acquired in 2020), KontrolFreek (US-based gaming accessories company, acquired in 2020)",
+        "Geographic Presence: Denmark, France, United States, China, Taiwan"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:54:23.946348",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/a4dfeafd-60eb-4f45-a56f-8d320c7d053b/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"SteelSeries\"}}"
+  },
+  "timestamp": "2025-02-16T09:54:24.476Z",
+  "expiresAt": "2025-02-17T09:54:24.476Z"
+}

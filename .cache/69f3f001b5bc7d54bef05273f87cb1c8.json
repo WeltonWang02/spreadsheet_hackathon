@@ -1,0 +1,79 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "5453a124-269a-4422-8d07-0512778c4b04",
+    "runner": "rhodium",
+    "run_id": "f1952bfe-2b43-3cb8-bb3b-ef999315abd8",
+    "input": {
+      "arguments": {
+        "query": "Raw materials"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "Base metals: Aluminum",
+        "Copper",
+        "Iron",
+        "Zinc",
+        "Tin",
+        "Precious metals: Gold",
+        "Silver",
+        "Platinum",
+        "Palladium",
+        "Rare earth metals: Various elements used in technology",
+        "Other mining products: Bauxite",
+        "Lithium",
+        "Graphite",
+        "Fibers: Cotton",
+        "Wool",
+        "Silk",
+        "Food crops: Wheat",
+        "Corn",
+        "Rice",
+        "Soybeans",
+        "Other agricultural products: Rubber (latex)",
+        "Tea",
+        "Coffee",
+        "Cocoa",
+        "Lumber",
+        "Wood",
+        "Bamboo",
+        "Sand",
+        "Gravel",
+        "Stone",
+        "Cement",
+        "Clay",
+        "Limestone",
+        "Petroleum",
+        "Natural Gas",
+        "Coal",
+        "Sulfur",
+        "Phosphate Rock",
+        "Commodity Chemicals",
+        "Synthetic Fibers",
+        "Synthetic Rubber"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:55:20.291821",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/5453a124-269a-4422-8d07-0512778c4b04/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Raw materials\"}}"
+  },
+  "timestamp": "2025-02-16T09:55:21.063Z",
+  "expiresAt": "2025-02-17T09:55:21.063Z"
+}

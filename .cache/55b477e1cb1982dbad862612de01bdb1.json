@@ -1,0 +1,62 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "50d8e410-5bd1-4c29-8b30-f7178289d6ff",
+    "runner": "rhodium",
+    "run_id": "ee0088de-fb01-f323-3999-1f73b85914a9",
+    "input": {
+      "arguments": {
+        "query": "Company policies"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "Company policies are guidelines that help employers deal with the health, safety and accountability of employees, as well as their interactions with customers or clients.",
+        "Equal opportunity policy",
+        "Workplace health and safety",
+        "Employee code of conduct policy",
+        "Attendance, vacation and time-off policies",
+        "Employee disciplinary action policy",
+        "Employee complaint policies",
+        "Ethics policy",
+        "Work schedule policies",
+        "Substance abuse policies",
+        "Workplace security policies",
+        "BYOD policies",
+        "Compensation and benefits policy",
+        "Travel policies",
+        "Employee fraternization policy",
+        "Inclement weather policies",
+        "Face mask policy",
+        "Remote work policy",
+        "Company policies put in writing what you expect from your employees. These may be related to performance, values or behavior.",
+        "Personnel Management Policies: Equal Opportunity Policy (EOP), Employee Code of Conduct, Attendance and Time-off Policies, Disciplinary Action Policy, Employee Complaint/Grievance Policies, Fraternization Policy, Compensation and Benefits Policy",
+        "Safety and Health Policies: Workplace Health and Safety Policy, Substance Abuse Policy, Face Mask Policy (COVID-19 related), Inclement Weather Policy",
+        "Operational Policies: Work Schedule and Rest Period Policy, Remote Work Policy, Travel Policy, Bring Your Own Device (BYOD) Policy",
+        "Security and Compliance Policies: Workplace Security Policy, Ethics Policy, Non-retaliation Policy",
+        "These policies serve multiple purposes: Setting clear expectations, Ensuring legal compliance, Protecting the business, Maintaining accountability, Promoting fair treatment of employees"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:56:37.111024",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/50d8e410-5bd1-4c29-8b30-f7178289d6ff/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Company policies\"}}"
+  },
+  "timestamp": "2025-02-16T09:56:37.703Z",
+  "expiresAt": "2025-02-17T09:56:37.703Z"
+}

@@ -1,0 +1,54 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "d0a03976-5279-448d-a0c8-ee1375924c0d",
+    "runner": "rhodium",
+    "run_id": "abee06e0-94eb-8aad-961b-b816b0f9aeee",
+    "input": {
+      "arguments": {
+        "query": "Resources and actions used to achieve objectives"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "Financial resources (cash, funding, credit)",
+        "Physical assets (equipment, property, products)",
+        "Material resources (raw materials, inventory)",
+        "Intellectual property (patents, trademarks, designs)",
+        "Human capital (high-performing staff, expertise)",
+        "Organizational culture",
+        "Company reputation",
+        "Setting clear directions and goals",
+        "Developing specific implementation plans",
+        "Creating measurable objectives",
+        "Performance evaluation and monitoring",
+        "Project management and execution",
+        "Resource allocation and optimization",
+        "Team collaboration and coordination",
+        "Staff motivation and engagement",
+        "Skills development and training"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:55:31.120276",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/d0a03976-5279-448d-a0c8-ee1375924c0d/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Resources and actions used to achieve objectives\"}}"
+  },
+  "timestamp": "2025-02-16T09:55:31.797Z",
+  "expiresAt": "2025-02-17T09:55:31.797Z"
+}

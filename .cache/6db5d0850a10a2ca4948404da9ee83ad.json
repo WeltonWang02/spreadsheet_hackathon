@@ -1,0 +1,43 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "0417ee80-3fb5-4f12-84cb-8771af45b9b8",
+    "runner": "rhodium",
+    "run_id": "36202f5e-ee7d-16b8-a0ac-59f5160a2439",
+    "input": {
+      "arguments": {
+        "query": "Find all products for: P.I. Engineering"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "X-keys Products: Stick Keys, XK Series, XKE Series, XBE Series, Keyboards, T-Bar Controls, Jog & Shuttle Controls, Joystick Controls",
+        "More Controls: Switch Controls (Button Switches, Foot Switches, Switch Interfaces), Button Pendants, Foot Pedals, Adapters",
+        "Accessories: Keyboard Accessories (Keycaps, Blockers, Key Kits, Paper Legends, Backlight Masks), Mounting Kits & Stands, Cables & Cords",
+        "Trackballs: O-Tracs, L-Tracs, X-keys Trackballs",
+        "Other Products: RailDriver, ClockWork Sport"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:58:58.341514",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/0417ee80-3fb5-4f12-84cb-8771af45b9b8/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Find all products for: P.I. Engineering\"}}"
+  },
+  "timestamp": "2025-02-16T09:58:58.718Z",
+  "expiresAt": "2025-02-17T09:58:58.718Z"
+}
