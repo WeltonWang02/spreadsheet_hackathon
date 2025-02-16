@@ -25,9 +25,13 @@ export const SingleSpreadsheet = forwardRef<
   isAggregation,
   sourceSheets
 }, ref) => {
-  const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>(
-    initialData ? [initialData] : []
-  );
+  const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>(() => {
+    // Initialize with a single empty row if no initial data
+    if (!initialData) {
+      return [[{ value: '', row: 0, col: 0 }]];
+    }
+    return [initialData];
+  });
   const [headers, setHeaders] = useState<string[]>(
     aggregationCriteria ? [aggregationCriteria, 'Count', 'Last Updated'] : ['Input']
   );
@@ -39,6 +43,8 @@ export const SingleSpreadsheet = forwardRef<
   const [showLLMPipe, setShowLLMPipe] = useState(false);
   const [showRunDropdown, setShowRunDropdown] = useState(false);
   const [isRunningAggregation, setIsRunningAggregation] = useState(false);
+  const [isRunningFind, setIsRunningFind] = useState(false);
+  const [isRunningCells, setIsRunningCells] = useState(false);
 
   useImperativeHandle(ref, () => ({
     handleRunFind,
@@ -195,6 +201,8 @@ export const SingleSpreadsheet = forwardRef<
   };
 
   const handleRunFind = async () => {
+    if (isRunningFind) return;
+    setIsRunningFind(true);
     try {
       const response = await fetch('/api/findall', {
         method: 'POST',
@@ -211,6 +219,11 @@ export const SingleSpreadsheet = forwardRef<
       
       const { results } = await response.json();
       
+      if (!results || !Array.isArray(results) || results.length === 0) {
+        console.warn('No results found');
+        return;
+      }
+      
       // Update all rows with the results
       const updates = results.map((result: string, index: number) => {
         const newRow = headers.map((_, colIndex) => ({
@@ -225,60 +238,66 @@ export const SingleSpreadsheet = forwardRef<
       onRowsChanged?.(updates);
     } catch (error) {
       console.error('Error running search:', error);
+    } finally {
+      setIsRunningFind(false);
+      setShowRunDropdown(false);
     }
-    setShowRunDropdown(false);
   };
 
   const handleRunCells = async () => {
+    if (isRunningCells) return;
+    setIsRunningCells(true);
     try {
       // For each row, make a runCells API call
       const promises = data.map(async (row, rowIndex) => {
         const firstColumnCell = row.find(cell => cell.col === 0);
-        if (!firstColumnCell) return;
+        if (!firstColumnCell?.value) return row; // Return unchanged row if no input
 
         // Create columns object from headers
         const columns = headers.reduce((acc, header, index) => {
-          acc[header] = ''; // Empty string as initial value
+          acc[header] = row[index]?.value || ''; // Use existing value or empty string
           return acc;
         }, {} as { [key: string]: string });
 
-        const response = await fetch('/api/runCells', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            input: firstColumnCell.value,
-            columns
-          }),
-        });
-
-        if (!response.ok) throw new Error('Failed to run cells');
-        
-        const responseData = await response.json();
-        
-        // Update the row with results
-        if (responseData.success && responseData.results) {
-          const newData = [...data];
-          Object.entries(responseData.results).forEach(([colName, value], colIndex) => {
-            if (colIndex > 0) { // Skip first column
-              newData[rowIndex][colIndex] = {
-                value: value as string,
-                row: rowIndex,
-                col: colIndex
-              };
-            }
+        try {
+          const response = await fetch('/api/runCells', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              input: firstColumnCell.value,
+              columns
+            }),
           });
-          setData(newData);
-          onRowsChanged?.(newData);
+
+          if (!response.ok) throw new Error('Failed to run cells');
+          
+          const responseData = await response.json();
+          
+          // Update the row with results
+          if (responseData.success && responseData.results) {
+            return Object.entries(responseData.results).map(([colName, value], colIndex) => ({
+              value: colIndex === 0 ? firstColumnCell.value : value as string,
+              row: rowIndex,
+              col: colIndex
+            }));
+          }
+        } catch (error) {
+          console.error(`Error running cells for row ${rowIndex}:`, error);
         }
+        return row; // Return unchanged row if there was an error
       });
 
-      await Promise.all(promises);
+      const newData = await Promise.all(promises);
+      setData(newData.filter(Boolean) as Array<Array<{ value: string; row: number; col: number }>>);
+      onRowsChanged?.(newData);
     } catch (error) {
       console.error('Error running cells:', error);
+    } finally {
+      setIsRunningCells(false);
+      setShowRunDropdown(false);
     }
-    setShowRunDropdown(false);
   };
 
   return (

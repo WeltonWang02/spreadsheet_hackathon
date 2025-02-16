@@ -16,10 +16,19 @@ export function WorkflowBuilder() {
 
   // Keep refs array in sync with steps
   useEffect(() => {
-    stepsRefs.current = workflowSteps.map((_, i) => 
-      stepsRefs.current[i] || React.createRef()
-    );
-  }, [workflowSteps.length]);
+    // Initialize refs for all steps
+    stepsRefs.current = workflowSteps.map((_, i) => {
+      if (!stepsRefs.current[i]) {
+        return React.createRef();
+      }
+      return stepsRefs.current[i];
+    });
+  }, [workflowSteps]);
+
+  const handleCreateInitialSheet = () => {
+    setWorkflowSteps([{ type: 'single', data: [[{ value: '', row: 0, col: 0 }]] }]);
+    setShowInitialButton(false);
+  };
 
   const runAll = async () => {
     setIsRunningAll(true);
@@ -27,33 +36,66 @@ export function WorkflowBuilder() {
       for (let i = 0; i < workflowSteps.length; i++) {
         const step = workflowSteps[i];
         const ref = stepsRefs.current[i];
-        if (!ref?.current) continue;
+        
+        console.log(`Running step ${i}:`, {
+          type: step.type,
+          hasRef: !!ref,
+          hasRefCurrent: !!ref?.current,
+          hasData: !!step?.data,
+          dataLength: step?.data?.length
+        });
 
-        if (step.type === 'single' || step.type === '3d') {
-          // For spreadsheet types that have both find and run cells
-          if (ref.current.handleRunFind) {
-            await ref.current.handleRunFind();
+        // Skip if ref or step is invalid
+        if (!ref?.current || !step?.data) {
+          console.warn(`Skipping step ${i} due to invalid ref or data:`, {
+            hasRef: !!ref,
+            hasRefCurrent: !!ref?.current,
+            hasData: !!step?.data
+          });
+          continue;
+        }
+
+        // Add a small delay between steps to ensure UI updates and prevent race conditions
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        try {
+          if (step.type === 'single' || step.type === '3d') {
+            // For spreadsheet types that have both find and run cells
+            if (typeof ref.current.handleRunFind === 'function') {
+              console.log(`Running find for step ${i}`);
+              await ref.current.handleRunFind();
+              // Wait a bit between find and run cells
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } else {
+              console.warn(`Step ${i} missing handleRunFind method`);
+            }
+            if (typeof ref.current.handleRunCells === 'function') {
+              console.log(`Running cells for step ${i}`);
+              await ref.current.handleRunCells();
+            } else {
+              console.warn(`Step ${i} missing handleRunCells method`);
+            }
+          } else if (step.type === 'aggregation' && typeof ref.current.handleRunAggregation === 'function') {
+            // For aggregation steps
+            console.log(`Running aggregation for step ${i}`);
+            await ref.current.handleRunAggregation();
+          } else if (step.type === 'llm_pipe' && typeof ref.current.handlePipeToLLM === 'function') {
+            // For LLM pipe steps
+            console.log(`Running LLM pipe for step ${i}`);
+            await ref.current.handlePipeToLLM();
           }
-          if (ref.current.handleRunCells) {
-            await ref.current.handleRunCells();
-          }
-        } else if (step.type === 'aggregation' && ref.current.handleRunAggregation) {
-          // For aggregation steps
-          await ref.current.handleRunAggregation();
-        } else if (step.type === 'llm_pipe' && ref.current.handlePipeToLLM) {
-          // For LLM pipe steps
-          await ref.current.handlePipeToLLM();
+        } catch (stepError) {
+          console.error(`Error running step ${i}:`, stepError);
+          // Continue with next step even if current one fails
         }
       }
     } catch (error) {
       console.error('Error running all steps:', error);
+    } finally {
+      setIsRunningAll(false);
     }
-    setIsRunningAll(false);
-  };
-
-  const handleCreateInitialSheet = () => {
-    setWorkflowSteps([{ type: 'single', data: [] }]);
-    setShowInitialButton(false);
   };
 
   const handleCreateThreeDSheet = (stepIndex: number) => {
