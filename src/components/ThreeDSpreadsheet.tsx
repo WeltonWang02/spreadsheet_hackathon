@@ -6,11 +6,13 @@ import Spreadsheet from './Spreadsheet';
 interface ThreeDSpreadsheetProps {
   initialRows?: number;
   initialCols?: number;
-  sourceData?: Array<{ value: string; row: number; col: number }>[];
+  sourceData?: Array<Array<{ value: string; row: number; col: number }>>;
+  isSidebarOpen?: boolean;
 }
 
 export default function ThreeDSpreadsheet({ 
-  sourceData = []
+  sourceData = [],
+  isSidebarOpen = true
 }: ThreeDSpreadsheetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeSheet, setActiveSheet] = useState<number | null>(null);
@@ -18,39 +20,38 @@ export default function ThreeDSpreadsheet({
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 }); // Track visible sheets
   const [headers, setHeaders] = useState<string[]>(['Find all items']);
   
-  // Get first column values from source data for the sidebar
-  const sidebarItems = sourceData.map(row => {
-    const firstColumnCell = row.find(cell => cell.col === 0);
-    return firstColumnCell?.value || 'Untitled';
-  });
-  
   // Initialize sheet data from source data
   useEffect(() => {
     if (sourceData.length === 0) return;
 
-    // Create empty sheet data for each source row
-    const newSheetData = sourceData.map(() => {
-      // Create 5 empty rows for each sheet
-      return Array(3).fill(null).map((_, rowIndex) => 
-        headers.map((_, colIndex) => ({
-          value: '',
-          row: rowIndex,
-          col: colIndex
-        }))
-      );
+    // Create sheet data for each source row
+    const newSheetData = sourceData.map(row => {
+      // Create initial data for the sheet with the source row
+      return [row.map(cell => ({
+        value: cell.value,
+        row: 0,
+        col: cell.col
+      }))];
     });
 
     setSheetData(newSheetData);
-  }, [sourceData, headers]);
+  }, [sourceData]); // Only depend on sourceData to ensure proper updates
 
   // Get sheet headers from the complete row data of source
   const sheetNames = sourceData.map(row => {
+    // Create an array of cells sorted by column
+    const sortedCells = [...row].sort((a, b) => a.col - b.col);
     // Combine all cell values from the row to create the header
-    return row
-      .sort((a, b) => a.col - b.col) // Sort by column to maintain order
+    return sortedCells
       .map(cell => cell.value)
       .filter(Boolean)
       .join(' - ') || 'Untitled Sheet';
+  });
+
+  // Get first column values from source data for the sidebar
+  const sidebarItems = sourceData.map(row => {
+    const firstColumnCell = row.find(cell => cell.col === 0);
+    return firstColumnCell?.value || 'Untitled';
   });
 
   // Update visible range when active sheet changes
