@@ -46,10 +46,7 @@ export default function ThreeDSpreadsheet({
     // Create an array of cells sorted by column
     const sortedCells = [...row].sort((a, b) => a.col - b.col);
     // Combine all cell values from the row to create the header
-    return sortedCells
-      .map(cell => cell.value)
-      .filter(Boolean)
-      .join(' - ') || 'Untitled Sheet';
+    return sortedCells.find(cell => cell.col === 0)?.value || 'Untitled Sheet';
   });
 
   // Get first column values from source data for the sidebar
