@@ -76,17 +76,26 @@ const ThreeDSpreadsheet = forwardRef<
 
   const handleCellChange = (sheetIndex: number, row: number, col: number, value: string) => {
     const newSheetData = [...sheetData];
-    console.log('newSheetData', newSheetData);
+    
+    // Initialize sheet if it doesn't exist
     if (!newSheetData[sheetIndex]) {
       newSheetData[sheetIndex] = [];
     }
+    
+    // Initialize row if it doesn't exist
     if (!newSheetData[sheetIndex][row]) {
-      newSheetData[sheetIndex][row] = Array(headers.length).fill(null).map((_, colIndex) => ({
+      newSheetData[sheetIndex][row] = [];
+    }
+    
+    // Initialize cell if it doesn't exist
+    if (!newSheetData[sheetIndex][row][col]) {
+      newSheetData[sheetIndex][row][col] = {
         value: '',
         row,
-        col: colIndex
-      }));
+        col
+      };
     }
+    
     newSheetData[sheetIndex][row][col].value = value;
     setSheetData(newSheetData);
     

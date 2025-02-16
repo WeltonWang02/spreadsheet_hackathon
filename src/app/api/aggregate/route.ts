@@ -16,21 +16,23 @@ interface AggregationRequest {
 export async function POST(req: Request) {
   try {
     const body = await req.json() as AggregationRequest;
-
+    // drop the first row of the data
+    const data = body.data.cells.slice(1);
     // Construct prompt for LLM
     const prompt = `
       Analyze this data follow the provided instructions to aggregate the data:
       User Prompt: ${body.aggregationPrompt}
       
       The below table's headers are: ${body.prevTableHeaders.join(', ')}
-    
+
       Data:
       ${JSON.stringify(body.data.cells, null, 2)}
       
+      Here are the columns you should return: Sheet,${body.columns.join(', ')}
+
       Previous Row Context:
       ${JSON.stringify(body.data.prevRow, null, 2)}
 
-      Here are the columns you should return: ${body.columns.join(', ')}
     `;
 
     const llmResponse = await llm(prompt);
