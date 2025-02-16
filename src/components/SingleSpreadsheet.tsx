@@ -85,7 +85,7 @@ export function SingleSpreadsheet({
     <>
       <div className={`
         ${isExpanded 
-          ? 'fixed w-[94vw] h-[80vh] !pointer-events-auto' 
+          ? 'fixed w-[calc(100vw-20px)] h-[95vh] left-10px top-0px !pointer-events-auto' 
           : 'relative w-full h-[300px]'}
         transition-all duration-200
       `}

@@ -140,172 +140,181 @@ export default function ThreeDSpreadsheet({
   return (
     <div className={`
       ${isExpanded 
-        ? 'fixed inset-0 !pointer-events-auto z-[100]' 
+        ? 'fixed inset-0 !pointer-events-auto z-[100] bg-gray-50/80' 
         : 'w-full h-full'}
-      bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden
       transition-all duration-200
     `}>
-      <div className="px-6 py-4 border-b border-gray-200/80 bg-white flex items-center justify-between">
-        <h3 className="font-medium text-gray-700">3D Spreadsheet</h3>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="px-4 py-2 text-gray-600 rounded-lg font-medium
-              hover:bg-gray-50 transition-colors duration-150 flex items-center gap-2"
-          >
-            {isExpanded ? (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M4 14h6m-6-4h6m6 0h4m-4 4h4m-10 4l-6-6 6-6" />
-                </svg>
-                Collapse
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-                Expand
-              </>
-            )}
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/findall', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    query: 'Run all sheets',
-                    sheet_level: true
-                  }),
-                });
-
-                if (!response.ok) throw new Error('Failed to run search');
-              } catch (error) {
-                console.error('Error running search:', error);
-              }
-            }}
-            className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
-              hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
-              shadow-sm hover:shadow active:translate-y-[1px]"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Run All
-          </button>
-          {isExpanded && (
+      <div className={`
+        ${isExpanded ? 'absolute inset-4' : 'relative w-full h-full'}
+        bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden
+      `}>
+        <div className="px-6 py-4 border-b border-gray-200/80 bg-white flex items-center justify-between sticky top-0 z-[102]">
+          <h3 className="font-medium text-gray-700">3D Spreadsheet</h3>
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsExpanded(false)}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 
-                hover:text-gray-900 transition-colors duration-150"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="px-4 py-2 text-gray-600 rounded-lg font-medium
+                hover:bg-gray-50 transition-colors duration-150 flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              {isExpanded ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M4 14h6m-6-4h6m6 0h4m-4 4h4m-10 4l-6-6 6-6" />
+                  </svg>
+                  Collapse
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                  Expand
+                </>
+              )}
             </button>
-          )}
-        </div>
-      </div>
-      
-      <div className="relative h-[calc(100%-4rem)] p-8 pl-5 pb-12">
-        {/* Sidebar */}
-        {isExpanded && (
-          <div className="fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-200/80 p-4 overflow-y-auto z-[101]">
-            <h4 className="font-medium text-gray-700 mb-4">Source Items</h4>
-            <div className="space-y-2">
-              {sidebarItems.map((item, index) => (
-                <div
-                  key={index}
-                  onClick={() => setActiveSheet(index)}
-                  className={`
-                    p-2 rounded-lg cursor-pointer transition-colors duration-150
-                    ${activeSheet === index 
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' 
-                      : 'hover:bg-gray-50 text-gray-600 border border-transparent'}
-                  `}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Stack of sheets */}
-        <div className={`
-          relative h-full
-          ${isExpanded 
-            ? 'ml-64 w-[calc(100%-16rem)]' 
-            : 'w-full'
-          }
-        `}>
-          <div className="relative w-full h-full">
-            {sheetNames.length > 0 && sheetNames
-              .slice(isExpanded ? visibleRange.start : visibleRange.start, isExpanded ? visibleRange.end + 1 : visibleRange.end + 1)
-              .map((name, index) => {
-              const totalSheets = Math.min(3, isExpanded ? visibleRange.end - visibleRange.start + 1 : sheetNames.length);
-              const actualIndex = isExpanded ? index + visibleRange.start : index + visibleRange.start;
-              
-              // Determine stacking position based on active state
-              let stackPosition = index;
-              if (activeSheet === actualIndex) {
-                stackPosition = 0;
-              } else if (index <= (activeSheet !== null ? totalSheets - 1 : totalSheets - 1)) {
-                stackPosition = index + (activeSheet !== null && index >= 0 ? 1 : 0);
-              }
-              
-              const offset = isExpanded ? stackPosition * 24 : stackPosition * 12; // Reduced offset when not expanded
-              
-              return (
-                <div
-                  key={actualIndex}
-                  onClick={() => {
-                    if (!isExpanded) return;
-                    setActiveSheet(activeSheet === actualIndex ? null : actualIndex);
-                  }}
-                  className={`
-                    absolute inset-0 bg-white border border-gray-200 rounded-lg shadow-sm p-4
-                    transition-all duration-300 hover:-translate-y-1 hover:shadow-md
-                    ${isExpanded ? 'cursor-pointer' : ''}
-                    ${activeSheet === actualIndex ? 'ring-2 ring-indigo-400 shadow-lg !translate-y-0 z-[60]' : ''}
-                  `}
-                  style={{
-                    transform: `translate(${offset}px, ${offset}px)`,
-                    zIndex: activeSheet === actualIndex ? 999 : totalSheets - stackPosition,
-                    opacity: stackPosition < 3 ? 1 - (stackPosition * 0.15) : 0,
-                  }}
-                >
-                  <h4 className="font-medium text-gray-700 mb-4">{name}</h4>
-                  
-                  <div className="mt-4 h-[calc(100%-4rem)]">
-                    <Spreadsheet
-                      data={sheetData[actualIndex] || []}
-                      headers={headers}
-                      onHeaderChange={(colIndex, value) => handleHeaderChange(actualIndex, colIndex, value)}
-                      onCellChange={(row, col, value) => handleCellChange(actualIndex, row, col, value)}
-                      onAddRow={() => handleAddRow(actualIndex)}
-                      onAddColumn={() => handleAddColumn(actualIndex)}
-                      onDeleteColumn={(colIndex) => handleDeleteColumn(actualIndex, colIndex)}
-                      onDeleteRow={(rowIndex) => handleDeleteRow(actualIndex, rowIndex)}
-                      firstColumnWidth="min-w-[8rem] max-w-[8rem]"
-                    />
-                  </div>
-                </div>
-              );
-            })}
-            
-            {sheetNames.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-gray-500">No sheets available</p>
-              </div>
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/findall', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      query: 'Run all sheets',
+                      sheet_level: true
+                    }),
+                  });
+
+                  if (!response.ok) throw new Error('Failed to run search');
+                } catch (error) {
+                  console.error('Error running search:', error);
+                }
+              }}
+              className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
+                hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
+                shadow-sm hover:shadow active:translate-y-[1px]"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Run All
+            </button>
+            {isExpanded && (
+              <button
+                onClick={() => setIsExpanded(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 
+                  hover:text-gray-900 transition-colors duration-150"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             )}
+          </div>
+        </div>
+        
+        <div className="relative h-[calc(100%-4rem)] p-8 pl-5 pb-12">
+          {/* Sidebar */}
+          {isExpanded && (
+            <div className="fixed left-4 top-[4.5rem] bottom-4 w-64 bg-white border-r border-gray-200/80 p-4 overflow-y-auto z-[101] rounded-l-xl">
+              <h4 className="font-medium text-gray-700 mb-4">Source Items</h4>
+              <div className="space-y-2">
+                {sidebarItems.map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={() => setActiveSheet(index)}
+                    className={`
+                      p-2 rounded-lg cursor-pointer transition-colors duration-150
+                      ${activeSheet === index 
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' 
+                        : 'hover:bg-gray-50 text-gray-600 border border-transparent'}
+                    `}
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Stack of sheets */}
+          <div className={`
+            relative h-full
+            ${isExpanded 
+              ? 'ml-64 w-[calc(100%-16rem)]' 
+              : 'w-full'
+            }
+          `}>
+            <div className="relative w-full h-full">
+              {sheetNames.length > 0 && sheetNames
+                .slice(isExpanded ? visibleRange.start : visibleRange.start, isExpanded ? visibleRange.end + 1 : visibleRange.end + 1)
+                .map((name, index) => {
+                const totalSheets = Math.min(3, isExpanded ? visibleRange.end - visibleRange.start + 1 : sheetNames.length);
+                const actualIndex = isExpanded ? index + visibleRange.start : index + visibleRange.start;
+                
+                // Determine stacking position based on active state
+                let stackPosition = index;
+                if (activeSheet === actualIndex) {
+                  stackPosition = 0;
+                } else if (index <= (activeSheet !== null ? totalSheets - 1 : totalSheets - 1)) {
+                  stackPosition = index + (activeSheet !== null && index >= 0 ? 1 : 0);
+                }
+                
+                const offset = isExpanded ? stackPosition * 24 : stackPosition * 8; // Even smaller offset when not expanded
+                
+                return (
+                  <div
+                    key={actualIndex}
+                    onClick={() => {
+                      if (!isExpanded) {
+                        setIsExpanded(true);
+                        setActiveSheet(actualIndex);
+                      } else {
+                        setActiveSheet(activeSheet === actualIndex ? null : actualIndex);
+                      }
+                    }}
+                    className={`
+                      absolute inset-0 bg-white border border-gray-200 rounded-lg shadow-sm p-4
+                      transition-all duration-300 
+                      ${!isExpanded ? 'hover:translate-y-[-2px] cursor-pointer' : 'hover:-translate-y-1'} 
+                      hover:shadow-md
+                      ${activeSheet === actualIndex ? 'ring-2 ring-indigo-400 shadow-lg !translate-y-0' : ''}
+                    `}
+                    style={{
+                      transform: `translate(${offset}px, ${offset}px)`,
+                      zIndex: activeSheet === actualIndex ? 60 : totalSheets - stackPosition,
+                      opacity: stackPosition < 3 ? 1 - (stackPosition * 0.1) : 0, // Reduced opacity difference
+                    }}
+                  >
+                    <h4 className="font-medium text-gray-700 mb-4">{name}</h4>
+                    
+                    <div className="mt-4 h-[calc(100%-4rem)]">
+                      <Spreadsheet
+                        data={sheetData[actualIndex] || []}
+                        headers={headers}
+                        onHeaderChange={(colIndex, value) => handleHeaderChange(actualIndex, colIndex, value)}
+                        onCellChange={(row, col, value) => handleCellChange(actualIndex, row, col, value)}
+                        onAddRow={() => handleAddRow(actualIndex)}
+                        onAddColumn={() => handleAddColumn(actualIndex)}
+                        onDeleteColumn={(colIndex) => handleDeleteColumn(actualIndex, colIndex)}
+                        onDeleteRow={(rowIndex) => handleDeleteRow(actualIndex, rowIndex)}
+                        firstColumnWidth="min-w-[8rem] max-w-[8rem]"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {sheetNames.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-gray-500">No sheets available</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
