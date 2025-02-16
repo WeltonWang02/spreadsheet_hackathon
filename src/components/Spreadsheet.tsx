@@ -14,6 +14,7 @@ interface SpreadsheetProps {
   data?: CellData[][];
   headers?: string[];
   onHeaderChange?: (colIndex: number, value: string) => void;
+  onCellChange?: (row: number, col: number, value: string) => void;
 }
 
 export default function Spreadsheet({ 
@@ -21,7 +22,8 @@ export default function Spreadsheet({
   initialCols = 5,
   data = [],
   headers = [],
-  onHeaderChange
+  onHeaderChange,
+  onCellChange
 }: SpreadsheetProps) {
   const [editingHeader, setEditingHeader] = useState<number | null>(null);
   const [cornerValue, setCornerValue] = useState("ID");
@@ -123,9 +125,13 @@ export default function Spreadsheet({
                   key={colIndex}
                   className="w-24 h-8 border border-gray-200 px-2"
                 >
-                  <div className="w-full h-full overflow-hidden whitespace-nowrap">
-                    {cell.value}
-                  </div>
+                  <input
+                    type="text"
+                    value={cell.value}
+                    onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
+                    className="w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
+                      text-gray-700 bg-transparent"
+                  />
                 </td>
               ))}
             </tr>

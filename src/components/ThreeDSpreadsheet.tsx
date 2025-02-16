@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Spreadsheet from './Spreadsheet';
+import { SpreadsheetStorage } from '@/lib/storage';
 
 interface ThreeDSpreadsheetProps {
   initialSheets?: number;
@@ -16,52 +17,119 @@ export default function ThreeDSpreadsheet({
   initialCols = 5,
   maxVisibleSheets = 3
 }: ThreeDSpreadsheetProps) {
+  const [storage] = useState(() => new SpreadsheetStorage());
   const [activeSheet, setActiveSheet] = useState(0);
   const [sheetData, setSheetData] = useState<Array<Array<Array<{ value: string; row: number; col: number }>>>>([]);
   const [sharedHeaders, setSharedHeaders] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sheetIds, setSheetIds] = useState<string[]>([]);
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [editingName, setEditingName] = useState<number | null>(null);
   const [deleteModalSheet, setDeleteModalSheet] = useState<number | null>(null);
 
-  // Initialize the sheets and headers
+  // Initialize from storage or create new sheets
   useEffect(() => {
-    // Initialize headers
-    const initialHeaders = Array(initialCols).fill(null).map((_, index) => 
-      String.fromCharCode(65 + index)
-    );
-    setSharedHeaders(initialHeaders);
+    const state = storage.getState();
+    
+    // Initialize headers if none exist
+    if (state.headers.length === 0) {
+      const initialHeaders = Array(initialCols).fill(null).map((_, index) => 
+        String.fromCharCode(65 + index)
+      );
+      storage.updateHeaders(initialHeaders);
+    }
 
-    // Initialize sheet data
-    const initialSheetData = Array(initialSheets).fill(null).map(() =>
-      Array(initialRows).fill(null).map((_, rowIndex) =>
-        Array(initialCols).fill(null).map((_, colIndex) => ({
-          value: '',
-          row: rowIndex,
-          col: colIndex,
-        }))
-      )
-    );
-    setSheetData(initialSheetData);
+    // Create initial sheets if none exist
+    if (state.entities.length === 0) {
+      for (let i = 0; i < initialSheets; i++) {
+        const entity = storage.createEntity(`Sheet ${i + 1}`);
+        storage.initializeEntityRows(entity.id, initialRows);
+      }
+    }
 
-    // Initialize sheet names
-    const initialSheetNames = Array(initialSheets).fill(null).map((_, index) => 
-      `Sheet ${index + 1}`
-    );
-    setSheetNames(initialSheetNames);
+    // Load state
+    const updatedState = storage.getState();
+    setSharedHeaders(updatedState.headers);
+    setSheetIds(updatedState.entities.map(e => e.id));
+    setSheetNames(updatedState.entities.map(e => e.name));
+    setSheetData(updatedState.entities.map(e => storage.getEntityData(e.id)));
   }, [initialSheets, initialRows, initialCols]);
 
   const handleHeaderChange = (colIndex: number, value: string) => {
     const newHeaders = [...sharedHeaders];
+    const oldHeader = newHeaders[colIndex];
     newHeaders[colIndex] = value;
     setSharedHeaders(newHeaders);
+
+    // Update storage with new headers
+    storage.updateHeaders(newHeaders);
+
+    // Refresh sheet data to reflect header changes
+    setSheetData(sheetIds.map(id => storage.getEntityData(id)));
   };
 
   const handleSheetNameChange = (index: number, value: string) => {
     const newNames = [...sheetNames];
     newNames[index] = value;
     setSheetNames(newNames);
+
+    // Update storage
+    storage.updateEntity(sheetIds[index], { name: value });
+  };
+
+  const handleAddSheet = () => {
+    // Create new entity in storage
+    const entity = storage.createEntity(`Sheet ${sheetData.length + 1}`);
+    storage.initializeEntityRows(entity.id, initialRows);
+
+    // Update local state
+    const updatedState = storage.getState();
+    setSheetIds([...sheetIds, entity.id]);
+    setSheetNames(updatedState.entities.map(e => e.name));
+    setSheetData([...sheetData, storage.getEntityData(entity.id)]);
+  };
+
+  const handleDeleteSheet = (index: number) => {
+    // Delete from storage
+    storage.deleteEntity(sheetIds[index]);
+
+    // Update local state
+    const newSheetIds = [...sheetIds];
+    newSheetIds.splice(index, 1);
+    setSheetIds(newSheetIds);
+
+    const newSheetData = [...sheetData];
+    newSheetData.splice(index, 1);
+    setSheetData(newSheetData);
+
+    const newSheetNames = [...sheetNames];
+    newSheetNames.splice(index, 1);
+    setSheetNames(newSheetNames);
+
+    // Adjust active sheet if needed
+    if (activeSheet >= newSheetData.length) {
+      setActiveSheet(Math.max(0, newSheetData.length - 1));
+    } else if (activeSheet === index) {
+      setActiveSheet(Math.max(0, index - 1));
+    }
+
+    setDeleteModalSheet(null);
+  };
+
+  const handleCellChange = (sheetIndex: number, row: number, col: number, value: string) => {
+    // Update storage
+    storage.updateSubEntity(
+      sheetIds[sheetIndex],
+      row.toString(),
+      sharedHeaders[col],
+      value
+    );
+
+    // Update local state
+    const newSheetData = [...sheetData];
+    newSheetData[sheetIndex][row][col].value = value;
+    setSheetData(newSheetData);
   };
 
   const handleSheetNameKeyDown = (e: React.KeyboardEvent) => {
@@ -118,43 +186,6 @@ export default function ThreeDSpreadsheet({
     return stackOrder >= 0 && stackOrder < maxVisibleSheets;
   };
 
-  const handleAddSheet = () => {
-    // Create new empty sheet
-    const newSheet = Array(initialRows).fill(null).map((_, rowIndex) =>
-      Array(initialCols).fill(null).map((_, colIndex) => ({
-        value: '',
-        row: rowIndex,
-        col: colIndex,
-      }))
-    );
-
-    // Add new sheet to data
-    setSheetData([...sheetData, newSheet]);
-
-    // Add new sheet name
-    const newSheetNumber = sheetData.length + 1;
-    setSheetNames([...sheetNames, `Sheet ${newSheetNumber}`]);
-  };
-
-  const handleDeleteSheet = (index: number) => {
-    const newSheetData = [...sheetData];
-    newSheetData.splice(index, 1);
-    setSheetData(newSheetData);
-
-    const newSheetNames = [...sheetNames];
-    newSheetNames.splice(index, 1);
-    setSheetNames(newSheetNames);
-
-    // Adjust active sheet if needed
-    if (activeSheet >= newSheetData.length) {
-      setActiveSheet(Math.max(0, newSheetData.length - 1));
-    } else if (activeSheet === index) {
-      setActiveSheet(Math.max(0, index - 1));
-    }
-
-    setDeleteModalSheet(null);
-  };
-
   return (
     <div className="flex h-[calc(100vh-8rem)] bg-gray-50">
       {/* Main Content */}
@@ -195,6 +226,10 @@ export default function ThreeDSpreadsheet({
                 {sheetNames.map((name, index) => (
                   <li 
                     key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSidebarSheetClick(index);
+                    }}
                     className={`
                       p-3.5 rounded-lg cursor-pointer transition-all duration-150
                       ${activeSheet === index 
@@ -204,7 +239,7 @@ export default function ThreeDSpreadsheet({
                       group flex items-center justify-between
                     `}
                   >
-                    <span onClick={() => handleSidebarSheetClick(index)}>
+                    <span>
                       {name}
                     </span>
                     {sheetData.length > 1 && (
@@ -328,6 +363,7 @@ export default function ThreeDSpreadsheet({
                       data={sheet}
                       headers={sharedHeaders}
                       onHeaderChange={handleHeaderChange}
+                      onCellChange={(row, col, value) => handleCellChange(index, row, col, value)}
                     />
                   </div>
                 </div>
