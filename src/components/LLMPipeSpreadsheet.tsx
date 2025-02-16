@@ -103,6 +103,7 @@ export function LLMPipeSpreadsheet({
             onDataChange?.(newData);
           }}
           firstColumnWidth="w-1/2"
+          multiline={true}
         />
       </div>
     </div>

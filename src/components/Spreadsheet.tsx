@@ -25,6 +25,7 @@ interface SpreadsheetProps {
   onDeleteRow?: (rowIndex: number) => void;
   renderRowPrefix?: (rowIndex: number) => React.ReactNode;
   firstColumnWidth?: string;
+  multiline?: boolean;
 }
 
 export default function Spreadsheet({ 
@@ -43,7 +44,8 @@ export default function Spreadsheet({
   onDeleteColumn,
   onDeleteRow,
   renderRowPrefix,
-  firstColumnWidth
+  firstColumnWidth,
+  multiline
 }: SpreadsheetProps) {
   const [editingHeader, setEditingHeader] = useState<number | null>(null);
   const [cornerValue, setCornerValue] = useState("ID");
@@ -206,15 +208,25 @@ export default function Spreadsheet({
                     ${colIndex === 0 ? firstColumnWidth || 'min-w-[12rem]' : 'w-48'} 
                     h-8 border border-gray-200 px-2 
                     ${colIndex === 0 ? 'bg-gray-50 sticky left-0 z-10' : ''}
+                    ${multiline ? 'h-auto min-h-[8rem]' : 'h-8'}
                   `}
                 >
-                  <input
-                    type="text"
-                    value={row[colIndex]?.value || ''}
-                    onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
-                    className={`w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
-                      text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''}`}
-                  />
+                  {multiline ? (
+                    <textarea
+                      value={row[colIndex]?.value || ''}
+                      onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
+                      className={`w-full h-full min-h-[8rem] focus:outline-none focus:ring-1 focus:ring-indigo-400/30
+                        text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''} resize-none p-2`}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={row[colIndex]?.value || ''}
+                      onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
+                      className={`w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
+                        text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''}`}
+                    />
+                  )}
                 </td>
               ))}
               <td className="w-12 h-8 border border-gray-200 p-0 sticky right-0 bg-white">
