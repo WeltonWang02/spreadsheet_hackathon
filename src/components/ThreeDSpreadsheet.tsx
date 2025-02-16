@@ -266,14 +266,14 @@ export default function ThreeDSpreadsheet({
     `}>
       <div className={`
         ${isExpanded ? 'absolute inset-4' : 'relative w-full h-full'}
-        bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden
+        bg-white border border-gray-200/80 overflow-hidden
       `}>
         <div className="px-6 py-4 border-b border-gray-200/80 bg-white flex items-center justify-between sticky top-0 z-[102]">
           <h3 className="font-medium text-gray-700">3D Spreadsheet</h3>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="px-4 py-2 text-gray-600 rounded-lg font-medium
+              className="px-4 py-2 text-gray-600 font-medium
                 hover:bg-gray-50 transition-colors duration-150 flex items-center gap-2"
             >
               {isExpanded ? (
@@ -297,7 +297,7 @@ export default function ThreeDSpreadsheet({
             <div className="relative">
               <button
                 onClick={() => setShowRunDropdown(!showRunDropdown)}
-                className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
+                className="px-4 py-2 bg-indigo-500 text-white font-medium
                   hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
                   shadow-sm hover:shadow active:translate-y-[1px]"
               >
@@ -309,7 +309,7 @@ export default function ThreeDSpreadsheet({
               </button>
               
               {showRunDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[103]">
+                <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg border border-gray-200 py-1 z-[103]">
                   <button
                     onClick={handleRunFind}
                     className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 
@@ -336,7 +336,7 @@ export default function ThreeDSpreadsheet({
             {isExpanded && (
               <button
                 onClick={() => setIsExpanded(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 
+                className="p-2 hover:bg-gray-100 text-gray-600 
                   hover:text-gray-900 transition-colors duration-150"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,14 +356,14 @@ export default function ThreeDSpreadsheet({
           {/* Sidebar */}
           {isExpanded && (
             <div className="fixed left-4 top-[4.5rem] bottom-4 w-64 bg-white border-r border-gray-200/80 p-4 overflow-y-auto z-[101] rounded-l-xl">
-              <h4 className="font-medium text-gray-700 mb-4">Source Items</h4>
+              <h4 className="font-medium text-gray-700 mb-4"></h4>
               <div className="space-y-2">
                 {sidebarItems.map((item, index) => (
                   <div
                     key={index}
                     onClick={() => setActiveSheet(index)}
                     className={`
-                      p-2 rounded-lg cursor-pointer transition-colors duration-150
+                      p-2 cursor-pointer transition-colors duration-150
                       ${activeSheet === index 
                         ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' 
                         : 'hover:bg-gray-50 text-gray-600 border border-transparent'}
@@ -412,7 +412,7 @@ export default function ThreeDSpreadsheet({
                       }
                     }}
                     className={`
-                      absolute inset-0 bg-white border border-gray-200 rounded-lg shadow-sm p-4
+                      absolute inset-0 bg-white border border-gray-200 shadow-sm p-4
                       transition-all duration-300 
                       ${!isExpanded ? 'hover:translate-y-[-2px] cursor-pointer overflow-hidden' : 'hover:-translate-y-1'} 
                       hover:shadow-md

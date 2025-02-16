@@ -281,7 +281,7 @@ export function SingleSpreadsheet({
     `}>
       <div className={`
         ${isExpanded ? 'absolute inset-4' : 'relative w-full h-full'}
-        bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden
+        bg-white border border-gray-200/80 overflow-hidden
       `}>
         <div className="px-6 py-4 border-b border-gray-200/80 bg-white flex items-center justify-between">
           <div className="flex-1">
@@ -316,7 +316,7 @@ export function SingleSpreadsheet({
                 setIsExpanded(!isExpanded);
                 onExpandChange?.(!isExpanded);
               }}
-              className="px-4 py-2 text-gray-600 rounded-lg font-medium
+              className="px-4 py-2 text-gray-600 font-medium
                 hover:bg-gray-50 transition-colors duration-150 flex items-center gap-2"
             >
               {isExpanded ? (
@@ -341,7 +341,7 @@ export function SingleSpreadsheet({
               <button
                 onClick={handleRunAggregation}
                 disabled={isRunningAggregation}
-                className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
+                className="px-4 py-2 bg-indigo-500 text-white font-medium
                   hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
                   shadow-sm hover:shadow active:translate-y-[1px] disabled:opacity-50
                   disabled:cursor-not-allowed"
@@ -359,7 +359,7 @@ export function SingleSpreadsheet({
                 <div className="relative">
                 <button
                     onClick={() => setShowRunDropdown(!showRunDropdown)}
-                    className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
+                    className="px-4 py-2 bg-indigo-500 text-white font-medium
                     hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
                     shadow-sm hover:shadow active:translate-y-[1px]"
                 >
@@ -371,7 +371,7 @@ export function SingleSpreadsheet({
                 </button>
                 
                 {showRunDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[103]">
+                    <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg border border-gray-200 py-1 z-[103]">
                     <button
                         onClick={handleRunFind}
                         className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 
@@ -399,7 +399,7 @@ export function SingleSpreadsheet({
             {isExpanded && (
               <button
                 onClick={() => setIsExpanded(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 
+                className="p-2 hover:bg-gray-100 text-gray-600 
                   hover:text-gray-900 transition-colors duration-150"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,7 +409,7 @@ export function SingleSpreadsheet({
             )}
           </div>
         </div>
-        <div className="h-[calc(100%-4rem)] overflow-auto">
+        <div className="h-[calc(100%-4rem)] overflow-auto pb-1">
           <Spreadsheet
             data={data}
             headers={headers}

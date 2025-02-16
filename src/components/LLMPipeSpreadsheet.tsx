@@ -50,7 +50,7 @@ export function LLMPipeSpreadsheet({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden">
+    <div className="bg-white border border-gray-200/80 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200/80 bg-white">
         <h3 className="font-medium text-gray-700">LLM Pipe</h3>
         <p className="text-sm text-gray-500 mt-1">
@@ -66,13 +66,13 @@ export function LLMPipeSpreadsheet({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Configure how the LLM should process each row. Use {input} to reference the row content. The input will contain all fields from the source row in a key-value format."
-          className="w-full h-32 px-3 py-2 border border-gray-200 rounded-lg 
+          className="w-full h-32 px-3 py-2 border border-gray-200 
             focus:outline-none focus:ring-2 focus:ring-indigo-400/30
             text-gray-700 placeholder-gray-400 resize-none"
         />
         <button
           onClick={handleRunLLM}
-          className="mt-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
+          className="mt-2 px-4 py-2 bg-indigo-500 text-white font-medium
             hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
             shadow-sm hover:shadow active:translate-y-[1px]"
         >

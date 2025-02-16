@@ -142,7 +142,7 @@ export function WorkflowBuilder() {
         {step.type === '3d' && (
           <button
             onClick={() => handleAggregate(index)}
-            className="px-4 py-2 rounded-lg bg-white shadow-sm hover:shadow-md
+            className="px-4 py-2 bg-white shadow-sm hover:shadow-md
               border border-gray-200 text-gray-700 font-medium
               transition-all duration-150 flex items-center gap-2"
           >
@@ -157,7 +157,7 @@ export function WorkflowBuilder() {
           <>
             <button
               onClick={() => handleCreateThreeDSheet(index)}
-              className="px-4 py-2 rounded-lg bg-white shadow-sm hover:shadow-md
+              className="px-4 py-2 bg-white shadow-sm hover:shadow-md
                 border border-gray-200 text-gray-700 font-medium
                 transition-all duration-150 flex items-center gap-2"
             >
@@ -169,7 +169,7 @@ export function WorkflowBuilder() {
             </button>
             <button
               onClick={() => handleCreateLLMPipe(index)}
-              className="px-4 py-2 rounded-lg bg-white shadow-sm hover:shadow-md
+              className="px-4 py-2 bg-white shadow-sm hover:shadow-md
                 border border-gray-200 text-gray-700 font-medium
                 transition-all duration-150 flex items-center gap-2"
             >
@@ -191,7 +191,7 @@ export function WorkflowBuilder() {
       {showInitialButton && (
         <button
           onClick={handleCreateInitialSheet}
-          className="w-48 p-3 rounded-lg bg-white shadow-sm hover:shadow-md
+          className="w-48 p-3 bg-white shadow-sm hover:shadow-md
             border border-gray-200 text-gray-700 font-medium
             transition-all duration-150 flex items-center gap-2"
         >
