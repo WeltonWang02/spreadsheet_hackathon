@@ -8,11 +8,12 @@ export async function POST(req: Request) {
     const columns = body.columns;
 
     // Execute the task
+    const colString = Object.keys(columns).join(', ');
     const taskResponse = await createAndExecuteTask({
       name: "Process Row Data", 
       description: "Process data",
       model: "helium",
-      prompt: "For the entity {input}, find the " + columns,
+      prompt: "For the entity {input}, find the " + colString,
       input_schema: {
         type: "object",
         properties: {
