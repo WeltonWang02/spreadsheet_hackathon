@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-
+import { llm } from '@/lib/llm';
 interface LLMRequest {
   inputs: string[];
   prompt: string;
-}
+}   
 
 export async function POST(req: Request) {
   try {
@@ -11,11 +11,20 @@ export async function POST(req: Request) {
 
     // For demonstration, we'll just echo back a modified version of each input
     // In a real implementation, you would call your LLM service here
-    const outputs = inputs.map(input => {
+    const outputs = await Promise.all(inputs.map(async (input) => {
       // Replace any {input} placeholders in the prompt with the actual input
-      const processedPrompt = prompt.replace(/{input}/g, input);
-      return `Processed: ${processedPrompt}`;
-    });
+      const processedPrompt = `
+        ${prompt}
+
+        Inputs: 
+        ${input}
+
+        Follow the instructions in the prompt and return the response using the context as described.
+      `
+      const llmResponse = await llm(processedPrompt);  
+
+      return llmResponse;
+    }));
 
     return NextResponse.json({
       success: true,

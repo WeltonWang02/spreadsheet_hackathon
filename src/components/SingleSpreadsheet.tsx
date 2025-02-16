@@ -36,7 +36,7 @@ export const SingleSpreadsheet = forwardRef<
     aggregationCriteria ? [aggregationCriteria, 'Count', 'Last Updated'] : ['Input']
   );
   const [title, setTitle] = useState(
-    aggregationCriteria ? `Aggregated by ${aggregationCriteria}` : 'Source Spreadsheet'
+    aggregationCriteria ? `Aggregate sheet ${aggregationCriteria}` : 'Datasheet'
   );
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);

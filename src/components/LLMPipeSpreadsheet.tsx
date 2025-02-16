@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
 import Spreadsheet from '@/components/Spreadsheet';
 
 interface LLMPipeSpreadsheetProps {
@@ -16,7 +16,15 @@ export const LLMPipeSpreadsheet = forwardRef<
 
   // Update local data when source data changes
   useEffect(() => {
-    setData(sourceData);
+    // setData(sourceData);
+    // only do the first column
+    setData(sourceData.map(row => {
+      const formattedValue = row.map((cell, colIndex) => {
+        const header = sourceData[0][colIndex].value;
+        return `${header}: ${cell.value}`;
+      }).join('\n');
+      return [{ value: formattedValue, row: row[0].row, col: 0 }];
+    }));
   }, [sourceData]);
 
   const handlePipeToLLM = async () => {
@@ -29,7 +37,11 @@ export const LLMPipeSpreadsheet = forwardRef<
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          inputs: data.map(row => row[0]?.value || ''),
+          inputs: data.map(row => {
+            return row.reduce((acc, cell, colIndex) => {
+              return { ...acc, [`col${colIndex}`]: cell?.value || '' };
+            }, {});
+          }),
           prompt
         }),
       });
@@ -41,7 +53,7 @@ export const LLMPipeSpreadsheet = forwardRef<
       // Update the output column with LLM responses
       const newData = data.map((row, index) => [
         row[0],
-        { value: outputs[index] || '', row: row[0].row, col: 1 }
+        { value: outputs[index]?.text || '', row: row[0].row, col: 1 }
       ]);
 
       setData(newData);
@@ -59,20 +71,20 @@ export const LLMPipeSpreadsheet = forwardRef<
   return (
     <div className="bg-white border border-gray-200/80 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200/80 bg-white">
-        <h3 className="font-medium text-gray-700">LLM Pipe</h3>
+        <h3 className="font-medium text-gray-700">LLM Response</h3>
         <p className="text-sm text-gray-500 mt-1">
-          Process each row through an LLM. The input column shows all fields from the source row.
+          Process each row through an LLM and output a structured response.
         </p>
       </div>
       
       <div className="p-4 border-b border-gray-200/80">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          LLM Prompt Configuration
+          Prompt
         </label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Configure how the LLM should process each row. Use {input} to reference the row content. The input will contain all fields from the source row in a key-value format."
+          placeholder="Configure how the LLM should process each row. The input will contain all fields from the source row in a key-value format."
           className="w-full h-32 px-3 py-2 border border-gray-200 
             focus:outline-none focus:ring-2 focus:ring-indigo-400/30
             text-gray-700 placeholder-gray-400 resize-none"
