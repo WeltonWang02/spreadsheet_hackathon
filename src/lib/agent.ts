@@ -113,7 +113,6 @@ async function agent(url: string, options: RequestInit = {}): Promise<AgentRespo
   if (!fs.existsSync(cacheDir)) {
     fs.mkdirSync(cacheDir, { recursive: true });
   }
-
   // Generate cache key from url and options
   const cacheKey = crypto
     .createHash('md5')
