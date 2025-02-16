@@ -4,11 +4,13 @@ import Spreadsheet from '@/components/Spreadsheet';
 interface SingleSpreadsheetProps {
   onRowsChanged?: (rows: any[]) => void;
   onExpandChange?: (expanded: boolean) => void;
+  onStartConnection?: () => void;
 }
 
 export function SingleSpreadsheet({
   onRowsChanged,
   onExpandChange,
+  onStartConnection,
 }: SingleSpreadsheetProps) {
   const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>([]);
   const [headers, setHeaders] = useState<string[]>(['Name']);
