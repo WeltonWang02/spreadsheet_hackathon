@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Spreadsheet from './Spreadsheet';
 import { SpreadsheetStorage } from '@/lib/storage';
+import Chat from './Chat';
 
 interface ThreeDSpreadsheetProps {
   initialSheets?: number;
@@ -27,6 +28,7 @@ export default function ThreeDSpreadsheet({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [editingName, setEditingName] = useState<number | null>(null);
   const [deleteModalSheet, setDeleteModalSheet] = useState<number | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(true);
 
   // Initialize from storage or create new sheets
   useEffect(() => {
@@ -212,6 +214,7 @@ export default function ThreeDSpreadsheet({
         <div className={`
           relative w-full h-full transition-all duration-300
           ${isSidebarOpen ? 'pl-80' : ''}
+          ${isChatOpen ? 'pr-96' : 'pr-0'}
           pt-24 px-8
         `}>
           {/* Sidebar */}
@@ -410,6 +413,54 @@ export default function ThreeDSpreadsheet({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Chat Toggle Button (Visible when chat is collapsed) */}
+      {!isChatOpen && (
+        <button
+          onClick={() => setIsChatOpen(true)}
+          className="fixed right-8 top-8 z-[60] p-3 rounded-xl bg-white shadow-sm
+            hover:shadow-md active:shadow-sm active:translate-y-[1px]
+            border border-gray-200/60 hover:bg-gray-50 transition-all duration-150"
+        >
+          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z" />
+          </svg>
+        </button>
+      )}
+
+      {/* Chat Panel */}
+      <div className={`
+        fixed right-0 top-0 w-96 h-screen bg-white shadow-xl transition-all duration-300 transform
+        ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
+        border-l border-gray-200/80 z-[55]
+      `}>
+        <Chat 
+          onClose={() => setIsChatOpen(false)} 
+          onCreateSheet={(name) => {
+            // Create new entity in storage
+            const entity = storage.createEntity(name);
+            storage.initializeEntityRows(entity.id, initialRows);
+            
+            // Initialize empty data structure for the new sheet
+            const emptySheetData = Array(initialRows).fill(null).map((_, rowIndex) =>
+              Array(initialCols).fill(null).map((_, colIndex) => ({
+                value: '',
+                row: rowIndex,
+                col: colIndex
+              }))
+            );
+
+            // Update local state
+            setSheetIds(prev => [...prev, entity.id]);
+            setSheetNames(prev => [...prev, name]);
+            setSheetData(prev => [...prev, emptySheetData]);
+
+            // Set the new sheet as active
+            setActiveSheet(sheetData.length);
+          }}
+        />
       </div>
     </div>
   );
