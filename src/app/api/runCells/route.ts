@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const taskResponse = await createAndExecuteTask({
       name: "Process Row Data", 
       description: "Process data",
-      model: "helium",
+      model: "neon",
       prompt: "For the entity {input}, find the " + colString,
       input_schema: {
         type: "object",
