@@ -107,10 +107,10 @@ export function WorkflowBuilder() {
       ? sourceStep.data as Array<Array<{ value: string; row: number; col: number }>>
       : [];
 
-    const threeDData = sourceData.slice(1).map(row => ({
+    // Remove .slice(1) to include all rows
+    const threeDData = sourceData.map(row => ({
       prevRow: row,
       data: [
-        // []
         [{ col: 0, row: 0, value: '' }]
       ]
     }));
@@ -134,9 +134,9 @@ export function WorkflowBuilder() {
     if (newSteps[stepIndex].type === 'single' && 
         stepIndex + 1 < newSteps.length && 
         newSteps[stepIndex + 1].type === '3d') {
-      // Update the 3D spreadsheet data with all rows
+      // Update the 3D spreadsheet data with all rows (removed .slice(1))
       const singleSheetData = newData as Array<Array<{ value: string; row: number; col: number }>>;
-      const threeDData = singleSheetData.slice(1).map(row => ({
+      const threeDData = singleSheetData.map(row => ({
         prevRow: row,
         data: [
           [{ col: 0, row: 0, value: '' }]
