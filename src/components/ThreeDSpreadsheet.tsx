@@ -206,6 +206,7 @@ const ThreeDSpreadsheet = forwardRef<
   const handleRunFind = async () => {
     setIsRunningFind(true);
     setLoadingSheets(sheetData.reduce((acc, _, idx) => ({ ...acc, [idx]: true }), {}));
+    setShowRunDropdown(false);
     try {
       // For each sheet, make a findall API call
       const promises = data.map(async (sheet, sheetIndex) => {
@@ -261,7 +262,6 @@ const ThreeDSpreadsheet = forwardRef<
       console.error('Error running search:', error);
     } finally {
       setIsRunningFind(false);
-      setShowRunDropdown(false);
       setLoadingSheets({});
     }
   };
@@ -269,6 +269,7 @@ const ThreeDSpreadsheet = forwardRef<
   const handleRunCells = async () => {
     setIsRunningCells(true);
     setLoadingSheets(sheetData.reduce((acc, _, idx) => ({ ...acc, [idx]: true }), {}));
+    setShowRunDropdown(false);
     try {
       // For each sheet, make a runCells API call
       const promises = data.map(async (sheet, sheetIndex) => {
@@ -276,8 +277,8 @@ const ThreeDSpreadsheet = forwardRef<
         const firstColumnCell = sheet.prevRow.find(cell => cell.col === 0);
         if (!firstColumnCell) return null;
 
-        // Create columns object from headers
-        const columns = headers.reduce((acc, header, index) => {
+        // Create columns object from headers, excluding the first column
+        const columns = headers.slice(1).reduce((acc, header, index) => {
           acc[header] = ''; // Empty string as initial value
           return acc;
         }, {} as { [key: string]: string });
@@ -334,7 +335,6 @@ const ThreeDSpreadsheet = forwardRef<
       console.error('Error running cells:', error);
     } finally {
       setIsRunningCells(false);
-      setShowRunDropdown(false);
       setLoadingSheets({});
     }
   };

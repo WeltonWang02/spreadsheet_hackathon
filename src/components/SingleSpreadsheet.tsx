@@ -363,9 +363,9 @@ export const SingleSpreadsheet = forwardRef<
         const firstColumnCell = row.find(cell => cell.col === 0);
         if (!firstColumnCell?.value) return row; // Return unchanged row if no input
 
-        // Create columns object from headers
-        const columns = headers.reduce((acc, header, index) => {
-          acc[header] = row[index]?.value || ''; // Use existing value or empty string
+        // Create columns object from headers, excluding the first column
+        const columns = headers.slice(1).reduce((acc, header, index) => {
+          acc[header] = row[index + 1]?.value || ''; // Use existing value or empty string
           return acc;
         }, {} as { [key: string]: string });
 
