@@ -142,7 +142,7 @@ export default function ThreeDSpreadsheet({
   return (
     <div className={`
       ${isExpanded 
-        ? 'fixed inset-0 !pointer-events-auto z-[100] bg-gray-50/80' 
+        ? 'fixed inset-0 !pointer-events-auto z-[100] bg-gray-50/80 z-index-100' 
         : 'w-full h-full'}
       transition-all duration-200
     `}>
