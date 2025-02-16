@@ -6,6 +6,7 @@ import { LLMPipeSpreadsheet } from './LLMPipeSpreadsheet';
 interface WorkflowStep {
   type: 'single' | '3d' | 'aggregation' | 'llm_pipe';
   data: Array<Array<{ value: string; row: number; col: number }>> | Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>;
+  executed?: boolean;
 }
 
 export function WorkflowBuilder() {
@@ -26,7 +27,11 @@ export function WorkflowBuilder() {
   }, [workflowSteps]);
 
   const handleCreateInitialSheet = () => {
-    setWorkflowSteps([{ type: 'single', data: [[{ value: '', row: 0, col: 0 }]] }]);
+    setWorkflowSteps([{ 
+      type: 'single', 
+      data: [[{ value: '', row: 0, col: 0 }]],
+      executed: false 
+    }]);
     setShowInitialButton(false);
   };
 
@@ -117,7 +122,8 @@ export function WorkflowBuilder() {
 
     newSteps.push({ 
       type: '3d', 
-      data: threeDData
+      data: threeDData,
+      executed: false
     });
     setWorkflowSteps(newSteps);
   };
@@ -125,44 +131,55 @@ export function WorkflowBuilder() {
   const handleDataChange = (stepIndex: number, newData: Array<Array<{ value: string; row: number; col: number }>> | Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>) => {
     const newSteps = [...workflowSteps];
     newSteps[stepIndex].data = newData;
+    newSteps[stepIndex].executed = false;
 
-    // Get current step's headers
-    const currentRef = stepsRefs.current[stepIndex];
-    const currentHeaders = currentRef?.current?.getHeaders?.() || [];
-
-    // If this is a single spreadsheet and there's a 3D spreadsheet next
-    if (newSteps[stepIndex].type === 'single' && 
-        stepIndex + 1 < newSteps.length && 
-        newSteps[stepIndex + 1].type === '3d') {
-      // Update the 3D spreadsheet data with all rows (removed .slice(1))
-      const singleSheetData = newData as Array<Array<{ value: string; row: number; col: number }>>;
-      const threeDData = singleSheetData.map(row => ({
-        prevRow: row,
-        data: [
-          [{ col: 0, row: 0, value: '' }]
-        ]
-      }));
-      newSteps[stepIndex + 1].data = threeDData;
-    }
-
-    // If this step has an LLM pipe next, update its data
-    if (stepIndex + 1 < newSteps.length && newSteps[stepIndex + 1].type === 'llm_pipe') {
-      let llmSourceData: Array<Array<{ value: string; row: number; col: number }>> = [];
-
-      if (Array.isArray(newData[0])) {
-        // For single sheet or aggregation data
-        llmSourceData = newData as Array<Array<{ value: string; row: number; col: number }>>;
-      } else {
-        // For 3D sheet data, flatten it
-        const threeDData = newData as Array<{ 
-          prevRow: Array<{ value: string; row: number; col: number }>;
-          data: Array<{ value: string; row: number; col: number }[]>;
-        }>;
-        llmSourceData = threeDData.map(sheet => sheet.prevRow);
+    // Only update downstream steps if they exist and are directly dependent
+    if (stepIndex + 1 < newSteps.length) {
+      const nextStep = newSteps[stepIndex + 1];
+      
+      // Update 3D sheet if it follows a single sheet
+      if (newSteps[stepIndex].type === 'single' && nextStep.type === '3d') {
+        const singleSheetData = newData as Array<Array<{ value: string; row: number; col: number }>>;
+        const threeDData = singleSheetData.map(row => ({
+          prevRow: row,
+          data: nextStep.type === '3d' 
+            ? (nextStep.data as any)[0]?.data || [[{ col: 0, row: 0, value: '' }]]
+            : [[{ col: 0, row: 0, value: '' }]]
+        }));
+        newSteps[stepIndex + 1].data = threeDData;
+        newSteps[stepIndex + 1].executed = false;
       }
 
-      // Update the LLM pipe step with new data and headers
-      newSteps[stepIndex + 1].data = llmSourceData;
+      // Update LLM pipe if it follows
+      if (nextStep.type === 'llm_pipe') {
+        let llmSourceData: Array<Array<{ value: string; row: number; col: number }>> = [];
+
+        if (Array.isArray(newData[0])) {
+          llmSourceData = newData as Array<Array<{ value: string; row: number; col: number }>>;
+        } else {
+          const threeDData = newData as Array<{ 
+            prevRow: Array<{ value: string; row: number; col: number }>;
+            data: Array<{ value: string; row: number; col: number }[]>;
+          }>;
+          llmSourceData = threeDData.map(sheet => sheet.prevRow);
+        }
+
+        // Preserve existing LLM responses while updating inputs
+        const existingLLMData = nextStep.data as Array<Array<{ value: string; row: number; col: number }>>;
+        const updatedLLMData = llmSourceData.map((row, index) => {
+          const existingResponse = existingLLMData[index]?.[1]?.value || '';
+          return [
+            { value: row.map((cell, colIndex) => {
+              const columnName = `Column ${colIndex + 1}`;
+              return `${columnName}: ${cell.value}`;
+            }).join('\n'), row: row[0]?.row || 0, col: 0 },
+            { value: existingResponse, row: row[0]?.row || 0, col: 1 }
+          ];
+        });
+
+        newSteps[stepIndex + 1].data = updatedLLMData;
+        newSteps[stepIndex + 1].executed = false;
+      }
     }
 
     setWorkflowSteps(newSteps);
@@ -209,7 +226,8 @@ export function WorkflowBuilder() {
 
     newSteps.push({ 
       type: 'aggregation', 
-      data: sourceData
+      data: sourceData,
+      executed: false
     });
     setWorkflowSteps(newSteps);
   };
@@ -234,7 +252,8 @@ export function WorkflowBuilder() {
 
     newSteps.push({ 
       type: 'llm_pipe', 
-      data: llmData
+      data: llmData,
+      executed: false
     });
     setWorkflowSteps(newSteps);
   };

@@ -19,9 +19,9 @@ export async function POST(req: Request) {
         Inputs: 
         ${input}
 
-        Follow the instructions in the prompt and return the response using the context as described.
+        Follow the instructions in the prompt and return the response using the context as described. You should substitue the variables when you can / with the provided context.
       `
-      const llmResponse = await llm(processedPrompt);  
+      const llmResponse = await llm(processedPrompt, "o3-mini");  
 
       return llmResponse;
     }));
