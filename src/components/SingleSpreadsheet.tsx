@@ -52,6 +52,7 @@ export const SingleSpreadsheet = forwardRef<
   const [isRunningAggregation, setIsRunningAggregation] = useState(false);
   const [isRunningFind, setIsRunningFind] = useState(false);
   const [isRunningCells, setIsRunningCells] = useState(false);
+  const [aggregationPrompt, setAggregationPrompt] = useState('');
 
   useImperativeHandle(ref, () => ({
     handleRunFind,
@@ -81,8 +82,10 @@ export const SingleSpreadsheet = forwardRef<
             data: sheet, // Send the entire sheet
             columns: sourceSheets[0].columns,
             prevTableHeaders: prevTableHeaders || [], // Pass the previous table headers
+            aggregationPrompt, // Include the aggregation prompt
             sheetName: `Sheet ${sheetIndex + 1}`,
-            sheetIndex
+            sheetIndex,
+            prevRows: sourceSheets[0].prevRows[sheetIndex]
           }),
         });
 
@@ -455,7 +458,26 @@ export const SingleSpreadsheet = forwardRef<
             )}
           </div>
         </div>
-        <div className="h-[calc(100%-4rem)] overflow-auto pb-1">
+
+        {/* Add aggregation prompt section for aggregation views */}
+        {isAggregation && (
+          <div className="p-4 border-b border-gray-200/80">
+            <textarea
+              value={aggregationPrompt}
+              onChange={(e) => setAggregationPrompt(e.target.value)}
+              placeholder="Describe how you want to aggregate the data from the previous sheets. Each sheet will be maps to a single row."
+              className="w-full h-16 px-3 py-2 border border-gray-200 
+                focus:outline-none focus:ring-2 focus:ring-indigo-400/30
+                text-gray-700 placeholder-gray-400 resize-none"
+            />
+          </div>
+        )}
+
+        <div className={`
+          ${isExpanded ? 'h-[calc(100%-8rem)]' : 'h-[calc(100%-4rem)]'} 
+          ${isAggregation ? 'h-[calc(100%-12rem)]' : ''} 
+          overflow-auto`}
+        >
           <Spreadsheet
             data={data}
             headers={headers}

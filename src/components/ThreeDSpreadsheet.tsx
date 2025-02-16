@@ -76,6 +76,7 @@ const ThreeDSpreadsheet = forwardRef<
 
   const handleCellChange = (sheetIndex: number, row: number, col: number, value: string) => {
     const newSheetData = [...sheetData];
+    console.log('newSheetData', newSheetData);
     if (!newSheetData[sheetIndex]) {
       newSheetData[sheetIndex] = [];
     }
@@ -490,24 +491,16 @@ const ThreeDSpreadsheet = forwardRef<
                 return (
                   <div
                     key={actualIndex}
-                    onClick={() => {
-                      if (!isExpanded) {
-                        setIsExpanded(true);
-                        setActiveSheet(actualIndex);
-                      } else {
-                        setActiveSheet(activeSheet === actualIndex ? null : actualIndex);
-                      }
-                    }}
                     className={`
                       absolute inset-0 bg-white border border-gray-200 shadow-sm p-4
                       transition-all duration-300 
-                      ${!isExpanded ? 'hover:translate-y-[-2px] cursor-pointer overflow-hidden' : 'hover:-translate-y-1'} 
+                      ${!isExpanded ? 'overflow-hidden' : ''} 
                       hover:shadow-md
-                      ${activeSheet === actualIndex ? 'ring-2 ring-indigo-400 shadow-lg !translate-y-0' : ''}
+                      ${activeSheet === actualIndex ? 'ring-2 ring-indigo-400 shadow-lg !translate-y-0 z-[60]' : 'pointer-events-none'}
                     `}
                     style={{
                       transform: `translate(${offset}px, ${offset}px)`,
-                      zIndex: activeSheet === actualIndex ? 60 : totalSheets - stackPosition,
+                      zIndex: totalSheets - stackPosition,
                       opacity: stackPosition < 3 ? 1 - (stackPosition * 0.1) : 0,
                     }}
                   >

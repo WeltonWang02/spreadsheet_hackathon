@@ -347,7 +347,7 @@ export function WorkflowBuilder() {
               ...sheet.data.flat().map((cell, cellIndex) => ({
                 value: cell.value,
                 row: sheetIndex,
-                col: cellIndex + 1
+                col: cellIndex
               }))
             ];
           });
@@ -361,6 +361,7 @@ export function WorkflowBuilder() {
               aggregationCriteria="Category"
               sourceSheets={[{ 
                 name: 'Source', 
+                prevRows: sourceStep.data.map(sheet => sheet.prevRow),
                 data: sourceSheetData,
                 columns: ['Category', 'Count', 'Last Updated']
               }]}
