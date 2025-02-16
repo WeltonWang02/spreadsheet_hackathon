@@ -235,7 +235,7 @@ export default function Spreadsheet({
           <tr>
             <td 
               colSpan={headers.length + 1}
-              className="h-8 border border-gray-200 sticky bottom-0 bg-white"
+              className="h-8 border border-gray-200 bg-white"
             >
               <button
                 onClick={onAddRow}

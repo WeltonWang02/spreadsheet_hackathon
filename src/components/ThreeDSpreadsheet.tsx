@@ -260,8 +260,8 @@ export default function ThreeDSpreadsheet({
   return (
     <div className={`
       ${isExpanded 
-        ? 'fixed inset-0 !pointer-events-auto z-[99999] bg-gray-50/80 z-index-100' 
-        : 'w-full h-full'}
+        ? 'fixed inset-0 !pointer-events-auto z-[99999] bg-gray-50/80' 
+        : 'w-full h-full overflow-hidden'}
       transition-all duration-200
     `}>
       <div className={`
@@ -347,7 +347,12 @@ export default function ThreeDSpreadsheet({
           </div>
         </div>
         
-        <div className="relative h-[calc(100%-4rem)] p-8 pl-5 pb-12">
+        <div className={`
+          relative 
+          ${isExpanded 
+            ? 'h-[calc(100%-4rem)] p-8 pl-5 pb-12' 
+            : 'h-[calc(100%-4rem)] p-4 overflow-hidden'}
+        `}>
           {/* Sidebar */}
           {isExpanded && (
             <div className="fixed left-4 top-[4.5rem] bottom-4 w-64 bg-white border-r border-gray-200/80 p-4 overflow-y-auto z-[101] rounded-l-xl">
@@ -376,8 +381,7 @@ export default function ThreeDSpreadsheet({
             relative h-full
             ${isExpanded 
               ? 'ml-64 w-[calc(100%-16rem)]' 
-              : 'w-full'
-            }
+              : 'w-full'}
           `}>
             <div className="relative w-full h-full">
               {sheetNames.length > 0 && sheetNames
@@ -410,19 +414,24 @@ export default function ThreeDSpreadsheet({
                     className={`
                       absolute inset-0 bg-white border border-gray-200 rounded-lg shadow-sm p-4
                       transition-all duration-300 
-                      ${!isExpanded ? 'hover:translate-y-[-2px] cursor-pointer' : 'hover:-translate-y-1'} 
+                      ${!isExpanded ? 'hover:translate-y-[-2px] cursor-pointer overflow-hidden' : 'hover:-translate-y-1'} 
                       hover:shadow-md
                       ${activeSheet === actualIndex ? 'ring-2 ring-indigo-400 shadow-lg !translate-y-0' : ''}
                     `}
                     style={{
                       transform: `translate(${offset}px, ${offset}px)`,
                       zIndex: activeSheet === actualIndex ? 60 : totalSheets - stackPosition,
-                      opacity: stackPosition < 3 ? 1 - (stackPosition * 0.1) : 0, // Reduced opacity difference
+                      opacity: stackPosition < 3 ? 1 - (stackPosition * 0.1) : 0,
                     }}
                   >
                     <h4 className="font-medium text-gray-700 mb-4">{name}</h4>
                     
-                    <div className="mt-4 h-[calc(100%-4rem)]">
+                    <div className={`
+                      mt-4 
+                      ${isExpanded 
+                        ? 'h-[calc(100%-4rem)]' 
+                        : 'h-[calc(100%-4rem)] overflow-auto'}
+                    `}>
                       <Spreadsheet
                         data={sheetData[actualIndex] || []}
                         headers={headers}
