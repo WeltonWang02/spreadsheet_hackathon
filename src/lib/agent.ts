@@ -2,12 +2,51 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
+interface TaskResponse {
+  task_id: string;
+  status: string;
+  result?: any;
+}
+
 interface AgentResponse {
   data: any;
   fromCache: boolean;
 }
 
-export async function agent(url: string, options: RequestInit = {}): Promise<AgentResponse> {
+const PARALLEL_URL = "https://api.parallel.ai";
+const PARALLEL_API_KEY = process.env.PARALLEL_API_KEY;
+
+export async function createTask(taskData: any): Promise<TaskResponse> {
+  const url = `${PARALLEL_URL}/v0/tasks`;
+  const options = {
+    method: 'POST',
+    headers: {
+      'x-api-key': PARALLEL_API_KEY!,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(taskData)
+  };
+
+  const response = await agent(url, options);
+  return response.data;
+}
+
+export async function executeTask(taskId: string, input: any): Promise<TaskResponse> {
+  const url = `${PARALLEL_URL}/v0/tasks/${taskId}/execute`;
+  const options = {
+    method: 'POST', 
+    headers: {
+      'x-api-key': PARALLEL_API_KEY!,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(input)
+  };
+
+  const response = await agent(url, options);
+  return response.data;
+}
+
+async function agent(url: string, options: RequestInit = {}): Promise<AgentResponse> {
   // Create cache directory if it doesn't exist
   const cacheDir = path.join(process.cwd(), '.cache');
   if (!fs.existsSync(cacheDir)) {

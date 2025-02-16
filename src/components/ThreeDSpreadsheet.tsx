@@ -8,8 +8,8 @@ interface ThreeDSpreadsheetProps {
   initialCols?: number;
   sourceData?: Array<Array<{ value: string; row: number; col: number }>>;
   isSidebarOpen?: boolean;
-  data: Array<Array<{ value: string; row: number; col: number }>>;
-  onDataChange?: (data: Array<Array<{ value: string; row: number; col: number }>>) => void;
+  data: Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>;
+  onDataChange?: (data: Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>) => void;
 }
 
 const ThreeDSpreadsheet = forwardRef<
@@ -37,20 +37,22 @@ const ThreeDSpreadsheet = forwardRef<
   useEffect(() => {
     if (!data || !Array.isArray(data) || data.length === 0) return;
 
-    // Create sheet data for each source row
-    const newSheetData = data.map(row => []);
+    // Create sheet data from each data item
+    const newSheetData = data.map(item => item.data); // Use the data array directly
     setSheetData(newSheetData);
 
     // Calculate sheet names from the data
-    const newSheetNames = data.map(row => {
-      const sortedCells = [...row].sort((a, b) => a.col - b.col);
-      return sortedCells.find(cell => cell.col === 0)?.value || 'Untitled Sheet';
+    const newSheetNames = data.map(item => {
+      const firstRow = item.prevRow;
+      const firstColumnCell = firstRow.find(cell => cell.col === 0);
+      return firstColumnCell?.value || 'Untitled Sheet';
     });
     setSheetNames(newSheetNames);
 
     // Calculate sidebar items from the data
-    const newSidebarItems = data.map(row => {
-      const firstColumnCell = row.find(cell => cell.col === 0);
+    const newSidebarItems = data.map(item => {
+      const firstRow = item.prevRow;
+      const firstColumnCell = firstRow.find(cell => cell.col === 0);
       return firstColumnCell?.value || 'Untitled';
     });
     setSidebarItems(newSidebarItems);
@@ -86,6 +88,20 @@ const ThreeDSpreadsheet = forwardRef<
     }
     newSheetData[sheetIndex][row][col].value = value;
     setSheetData(newSheetData);
+    
+    // Call onDataChange with updated data
+    if (onDataChange) {
+      const newData = data.map((item, idx) => {
+        if (idx === sheetIndex) {
+          return {
+            prevRow: item.prevRow,
+            data: newSheetData[idx]
+          };
+        }
+        return item;
+      });
+      onDataChange(newData);
+    }
   };
 
   const handleAddRow = (sheetIndex: number) => {
@@ -98,6 +114,15 @@ const ThreeDSpreadsheet = forwardRef<
     }));
     currentSheet.push(newRow);
     setSheetData(newSheetData);
+
+    // Call onDataChange with updated data
+    if (onDataChange) {
+      const newData = data.map((item, idx) => ({
+        prevRow: item.prevRow,
+        data: idx === sheetIndex ? newSheetData[idx] : item.data
+      }));
+      onDataChange(newData);
+    }
   };
 
   const handleAddColumn = (sheetIndex: number) => {
@@ -112,6 +137,15 @@ const ThreeDSpreadsheet = forwardRef<
       { value: '', row: rowIndex, col: row.length }
     ]);
     setSheetData(newSheetData);
+
+    // Call onDataChange with updated data
+    if (onDataChange) {
+      const newData = data.map((item, idx) => ({
+        prevRow: item.prevRow,
+        data: idx === sheetIndex ? newSheetData[idx] : item.data
+      }));
+      onDataChange(newData);
+    }
   };
 
   const handleDeleteColumn = (sheetIndex: number, colIndex: number) => {
@@ -128,6 +162,15 @@ const ThreeDSpreadsheet = forwardRef<
         .map((cell, i) => ({ ...cell, col: i }))
     );
     setSheetData(newSheetData);
+
+    // Call onDataChange with updated data
+    if (onDataChange) {
+      const newData = data.map((item, idx) => ({
+        prevRow: item.prevRow,
+        data: idx === sheetIndex ? newSheetData[idx] : item.data
+      }));
+      onDataChange(newData);
+    }
   };
 
   const handleDeleteRow = (sheetIndex: number, rowIndex: number) => {
@@ -138,6 +181,15 @@ const ThreeDSpreadsheet = forwardRef<
         row.map(cell => ({ ...cell, row: newRowIndex }))
       );
     setSheetData(newSheetData);
+
+    // Call onDataChange with updated data
+    if (onDataChange) {
+      const newData = data.map((item, idx) => ({
+        prevRow: item.prevRow,
+        data: idx === sheetIndex ? newSheetData[idx] : item.data
+      }));
+      onDataChange(newData);
+    }
   };
 
   const handleRunFind = async () => {
@@ -146,7 +198,7 @@ const ThreeDSpreadsheet = forwardRef<
       // For each sheet, make a findall API call
       const promises = data.map(async (sheet, sheetIndex) => {
         // Get the first column value as the query
-        const firstColumnCell = sheet.find(cell => cell.col === 0);
+        const firstColumnCell = sheet.prevRow.find(cell => cell.col === 0);
         if (!firstColumnCell) return;
 
         const response = await fetch('/api/findall', {
@@ -200,7 +252,7 @@ const ThreeDSpreadsheet = forwardRef<
       // For each sheet, make a runCells API call
       const promises = sheetData.map(async (sheet, sheetIndex) => {
         // Get the first column value as input from sourceData
-        const firstColumnCell = data[sheetIndex]?.find(cell => cell.col === 0);
+        const firstColumnCell = data[sheetIndex]?.prevRow.find(cell => cell.col === 0);
         if (!firstColumnCell) return;
 
         // Create columns object from headers
@@ -496,4 +548,4 @@ const ThreeDSpreadsheet = forwardRef<
   );
 });
 
-export default ThreeDSpreadsheet; 
+export default ThreeDSpreadsheet;

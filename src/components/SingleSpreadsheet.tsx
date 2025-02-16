@@ -63,38 +63,47 @@ export const SingleSpreadsheet = forwardRef<
     setIsRunningAggregation(true);
 
     try {
-      // Make one API call per sheet
-      const promises = sourceSheets.map(async (sheet) => {
+      // Get all sheets from the source 3D spreadsheet
+      const threeDSheets = sourceSheets[0].data;
+      console.log('Processing sheets:', threeDSheets.length);
+      
+      // Make one API call per sheet in the 3D spreadsheet
+      const promises = threeDSheets.map(async (sheet, sheetIndex) => {
+        // Each sheet is already an array of cells representing one sheet in the 3D view
         const response = await fetch('/api/aggregate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            sheetName: sheet.name,
-            columns: sheet.columns,
-            data: sheet.data
+            data: sheet, // Send the entire sheet
+            columns: sourceSheets[0].columns,
+            sheetName: `Sheet ${sheetIndex + 1}`,
+            sheetIndex
           }),
         });
 
-        if (!response.ok) throw new Error('Failed to aggregate sheet');
+        if (!response.ok) throw new Error(`Failed to aggregate sheet ${sheetIndex}`);
         
-        const { results } = await response.json();
-        return results;
+        const result = await response.json();
+        return {
+          ...result,
+          sheetIndex,
+          sheetName: `Sheet ${sheetIndex + 1}`
+        };
       });
 
       const results = await Promise.all(promises);
       
-      // Add each result as a new row
-      const newData = results.map((result, index) => ([
-        { value: result['First Column'], row: data.length + index, col: 0 },
-        { value: result['Count'], row: data.length + index, col: 1 },
-        { value: result['Last Updated'], row: data.length + index, col: 2 }
+      // Each result becomes one row in the aggregation spreadsheet
+      const newData = results.map((result, rowIndex) => ([
+        { value: result.sheetName || `Sheet ${rowIndex + 1}`, row: rowIndex, col: 0 },
+        { value: result.count?.toString() || '0', row: rowIndex, col: 1 },
+        { value: result.lastUpdated || new Date().toISOString(), row: rowIndex, col: 2 }
       ]));
 
-      const updatedData = [...data, ...newData];
-      setData(updatedData);
-      onRowsChanged?.(updatedData);
+      setData(newData);
+      onRowsChanged?.(newData);
     } catch (error) {
       console.error('Error running aggregation:', error);
     } finally {

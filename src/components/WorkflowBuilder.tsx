@@ -5,7 +5,7 @@ import { LLMPipeSpreadsheet } from './LLMPipeSpreadsheet';
 
 interface WorkflowStep {
   type: 'single' | '3d' | 'aggregation' | 'llm_pipe';
-  data: Array<Array<{ value: string; row: number; col: number }>>;
+  data: Array<Array<{ value: string; row: number; col: number }>> | Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>;
 }
 
 export function WorkflowBuilder() {
@@ -101,14 +101,19 @@ export function WorkflowBuilder() {
   const handleCreateThreeDSheet = (stepIndex: number) => {
     const sourceStep = workflowSteps[stepIndex];
     const newSteps = [...workflowSteps];
-    
-    // Each row from the source becomes a sheet in the 3D view
-    // Include all rows, including the first row
-    const threeDData = sourceStep.data.map(row => {
-      // Sort cells by column to ensure consistent order
-      const sortedRow = [...row].sort((a, b) => a.col - b.col);
-      return sortedRow;
-    });
+
+    // Create a sheet for each data row, named by first column value
+    const sourceData = Array.isArray(sourceStep.data[0]) 
+      ? sourceStep.data as Array<Array<{ value: string; row: number; col: number }>>
+      : [];
+
+    const threeDData = sourceData.slice(1).map(row => ({
+      prevRow: row,
+      data: [
+        // []
+        [{ col: 0, row: 0, value: '' }]
+      ]
+    }));
 
     newSteps.push({ 
       type: '3d', 
@@ -117,7 +122,7 @@ export function WorkflowBuilder() {
     setWorkflowSteps(newSteps);
   };
 
-  const handleDataChange = (stepIndex: number, newData: Array<Array<{ value: string; row: number; col: number }>>) => {
+  const handleDataChange = (stepIndex: number, newData: Array<Array<{ value: string; row: number; col: number }>> | Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>) => {
     const newSteps = [...workflowSteps];
     newSteps[stepIndex].data = newData;
 
@@ -126,24 +131,36 @@ export function WorkflowBuilder() {
         stepIndex + 1 < newSteps.length && 
         newSteps[stepIndex + 1].type === '3d') {
       // Update the 3D spreadsheet data with all rows
-      const threeDData = newData.map(row => {
-        const sortedRow = [...row].sort((a, b) => a.col - b.col);
-        return sortedRow;
-      });
+      const singleSheetData = newData as Array<Array<{ value: string; row: number; col: number }>>;
+      const threeDData = singleSheetData.slice(1).map(row => ({
+        prevRow: row,
+        data: [
+            // []
+          [{ col: 0, row: 0, value: '' }]
+        ]
+      }));
       newSteps[stepIndex + 1].data = threeDData;
     }
 
     // If this step has an LLM pipe next, update its data
     if (stepIndex + 1 < newSteps.length && newSteps[stepIndex + 1].type === 'llm_pipe') {
+      const currentData = Array.isArray(newData[0]) 
+        ? newData as Array<Array<{ value: string; row: number; col: number }>>
+        : (newData as Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>)
+          .map(item => item.prevRow);
+
       // Create a key-value listing of all columns for each row
-      const llmData = newData.map(row => {
+      const llmData = currentData.map(row => {
         const rowContent = row.map((cell, colIndex) => {
           const columnName = newSteps[stepIndex].type === 'single' ? `Column ${colIndex + 1}` : cell.col.toString();
           return `${columnName}: ${cell.value}`;
         }).join('\n');
 
         // Preserve the existing LLM output if it exists
-        const existingOutput = newSteps[stepIndex + 1].data.find(r => r[0].row === row[0].row)?.[1]?.value || '';
+        const existingOutput = Array.isArray(newSteps[stepIndex + 1].data[0]) 
+          ? (newSteps[stepIndex + 1].data as Array<Array<{ value: string; row: number; col: number }>>)
+            .find(r => r[0].row === row[0].row)?.[1]?.value || ''
+          : '';
 
         return [
           { value: rowContent, row: row[0]?.row || 0, col: 0 },
@@ -157,34 +174,14 @@ export function WorkflowBuilder() {
     setWorkflowSteps(newSteps);
   };
 
-  const handleAggregate = (stepIndex: number) => {
+  const handleAggregate = async (stepIndex: number) => {
     const sourceData = workflowSteps[stepIndex].data;
     
-    // Aggregate the data from the 3D spreadsheet
-    const aggregated = sourceData.reduce((acc, sheet) => {
-      if (!sheet.length) return acc;
-
-      const firstCell = sheet[0];
-      if (firstCell) {
-        const existingEntry = acc.find(entry => entry[0].value === firstCell.value);
-        if (existingEntry) {
-          existingEntry[1].value = (parseInt(existingEntry[1].value || '0') + 1).toString();
-          existingEntry[2].value = new Date().toISOString();
-        } else {
-          acc.push([
-            { value: firstCell.value, row: acc.length, col: 0 },
-            { value: '1', row: acc.length, col: 1 },
-            { value: new Date().toISOString(), row: acc.length, col: 2 }
-          ]);
-        }
-      }
-      return acc;
-    }, [] as Array<Array<{ value: string; row: number; col: number }>>);
-
+    // Simply create the aggregation component with the source data
     const newSteps = [...workflowSteps];
     newSteps.push({ 
       type: 'aggregation', 
-      data: aggregated
+      data: [[{ value: '', row: 0, col: 0 }]] // Start with empty data
     });
     setWorkflowSteps(newSteps);
   };
@@ -290,13 +287,18 @@ export function WorkflowBuilder() {
           </div>
         );
       case 'aggregation':
-        return (
+        console.log('aggregation', workflowSteps);
+      return (
           <div key={index} className="mb-8">
             <SingleSpreadsheet
               ref={stepsRefs.current[index]}
               isAggregation={true}
               aggregationCriteria="Category"
-              sourceSheets={[{ name: 'Source', data: workflowSteps[index - 1].data, columns: [] }]}
+              sourceSheets={[{ 
+                name: 'Source', 
+                data: workflowSteps[index - 1].data,
+                columns: workflowSteps[index - 1].data[0]?.map((cell, i) => `Column ${i + 1}`) || []
+              }]}
             />
             {renderActionButtons(step, index)}
           </div>
