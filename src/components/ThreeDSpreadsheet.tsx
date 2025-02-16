@@ -305,11 +305,12 @@ export default function ThreeDSpreadsheet({
                     ) : (
                       visible ? 'opacity-100 cursor-pointer hover:opacity-95' : 'opacity-0 pointer-events-none'
                     )}
+                    ${isTransitioning ? 'scale-95' : 'scale-100'}
                   `}
                   style={{
                     transform: isSidebarOpen
                       ? stackOrder >= 0
-                        ? `translate(${stackOrder * 40}px, ${-stackOrder * 20}px)`
+                        ? `translate(${stackOrder * 40}px, ${-stackOrder * 20}px) ${isTransitioning ? 'scale(0.95)' : ''}`
                         : 'translate(-100%, 0)'
                       : isActive
                         ? 'none'
@@ -319,7 +320,8 @@ export default function ThreeDSpreadsheet({
                       : isActive ? 30 : -1,
                     left: 0,
                     top: 0,
-                    pointerEvents: isTransitioning || !visible ? 'none' : 'auto'
+                    pointerEvents: isTransitioning || !visible ? 'none' : 'auto',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 >
                   <div className={`
@@ -369,6 +371,7 @@ export default function ThreeDSpreadsheet({
                       headers={sharedHeaders}
                       onHeaderChange={handleHeaderChange}
                       onCellChange={(row, col, value) => handleCellChange(index, row, col, value)}
+                      sheetName={sheetNames[index]}
                     />
                   </div>
                 </div>
@@ -441,6 +444,9 @@ export default function ThreeDSpreadsheet({
         <Chat 
           onClose={() => setIsChatOpen(false)} 
           onCreateSheet={(name) => {
+            // First, ensure sidebar is open
+            setIsSidebarOpen(true);
+
             // Create new entity in storage
             const entity = storage.createEntity(name);
             storage.initializeEntityRows(entity.id, initialRows);
@@ -454,13 +460,24 @@ export default function ThreeDSpreadsheet({
               }))
             );
 
-            // Update local state
-            setSheetIds(prev => [...prev, entity.id]);
-            setSheetNames(prev => [...prev, name]);
-            setSheetData(prev => [...prev, emptySheetData]);
+            // Set transitioning state to trigger animation
+            setIsTransitioning(true);
 
-            // Set the new sheet as active
-            setActiveSheet(sheetData.length);
+            // Delay the state updates to allow the sidebar to open first
+            setTimeout(() => {
+              // Update local state
+              setSheetIds(prev => [...prev, entity.id]);
+              setSheetNames(prev => [...prev, name]);
+              setSheetData(prev => [...prev, emptySheetData]);
+
+              // Set the new sheet as active
+              setActiveSheet(sheetData.length);
+
+              // Reset transitioning state after animation
+              setTimeout(() => {
+                setIsTransitioning(false);
+              }, 300);
+            }, 150); // Wait for sidebar to start opening
           }}
           onUpdateHeaders={(headers) => {
             // Update headers in storage
