@@ -12,6 +12,7 @@ interface SingleSpreadsheetProps {
     name: string;
     data: Array<Array<{ value: string; row: number; col: number }>>;
     columns: string[];
+    prevRows: Array<Array<{ value: string; row: number; col: number }>>;
   }>;
 }
 
@@ -39,9 +40,13 @@ export const SingleSpreadsheet = forwardRef<
     }
     return [initialData];
   });
-  const [headers, setHeaders] = useState<string[]>(
-    aggregationCriteria ? [aggregationCriteria, 'Count', 'Last Updated'] : ['Input']
-  );
+  const [headers, setHeaders] = useState<string[]>(() => {
+    if (isAggregation && sourceSheets?.[0]?.columns) {
+      // For aggregation view, use the source sheet columns
+      return ['Sheet Name', ...sourceSheets[0].columns.slice(1)];
+    }
+    return ['Input'];
+  });
   const [title, setTitle] = useState(
     aggregationCriteria ? `Aggregate sheet ${aggregationCriteria}` : 'Datasheet'
   );
@@ -58,7 +63,12 @@ export const SingleSpreadsheet = forwardRef<
     handleRunFind,
     handleRunCells,
     handleRunAggregation,
-    getHeaders: () => headers
+    getHeaders: () => {
+      if (isAggregation && sourceSheets?.[0]?.columns) {
+        return ['Sheet Name', 'Count', 'Last Updated', ...sourceSheets[0].columns.slice(1)];
+      }
+      return headers;
+    }
   }));
 
   const handleRunAggregation = async () => {
@@ -72,41 +82,55 @@ export const SingleSpreadsheet = forwardRef<
       
       // Make one API call per sheet in the 3D spreadsheet
       const promises = threeDSheets.map(async (sheet, sheetIndex) => {
-        // Each sheet is already an array of cells representing one sheet in the 3D view
         const response = await fetch('/api/aggregate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            data: sheet, // Send the entire sheet
+            data: {
+              cells: sheet,
+              prevRow: sourceSheets[0].prevRows[sheetIndex] || []
+            },
             columns: sourceSheets[0].columns,
-            prevTableHeaders: prevTableHeaders || [], // Pass the previous table headers
-            aggregationPrompt, // Include the aggregation prompt
+            prevTableHeaders: prevTableHeaders || [],
+            aggregationPrompt,
             sheetName: `Sheet ${sheetIndex + 1}`,
-            sheetIndex,
-            prevRows: sourceSheets[0].prevRows[sheetIndex]
+            sheetIndex
           }),
         });
 
         if (!response.ok) throw new Error(`Failed to aggregate sheet ${sheetIndex}`);
         
         const result = await response.json();
-        return {
-          ...result,
-          sheetIndex,
-          sheetName: `Sheet ${sheetIndex + 1}`
-        };
+        return result;
       });
 
       const results = await Promise.all(promises);
       
-      // Each result becomes one row in the aggregation spreadsheet
-      const newData = results.map((result, rowIndex) => ([
-        { value: result.sheetName || `Sheet ${rowIndex + 1}`, row: rowIndex, col: 0 },
-        { value: result.count?.toString() || '0', row: rowIndex, col: 1 },
-        { value: result.lastUpdated || new Date().toISOString(), row: rowIndex, col: 2 }
-      ]));
+      // Transform the results into rows for the spreadsheet
+      const newData = results.map((result, rowIndex) => {
+        if (!result.success) return null;
+
+        const row = [
+          { value: result.sheetName || `Sheet ${rowIndex + 1}`, row: rowIndex, col: 0 },
+        ];
+
+        // Add any additional insights from the aggregation
+        if (result.aggregatedInsights) {
+          Object.entries(result.aggregatedInsights).forEach(([key, value], colIndex) => {
+            if (colIndex > 0) { // Skip the first column since we already have the sheet name
+              row.push({
+                value: value?.toString() || '',
+                row: rowIndex,
+                col: colIndex + 2
+              });
+            }
+          });
+        }
+
+        return row;
+      }).filter(Boolean);
 
       setData(newData);
       onRowsChanged?.(newData);

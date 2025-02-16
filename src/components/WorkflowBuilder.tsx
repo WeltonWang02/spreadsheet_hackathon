@@ -207,8 +207,8 @@ export function WorkflowBuilder() {
         // Return a row with [Category, Count, Last Updated]
         return [
           { value: sheetName, row: sheetIndex, col: 0 },
-          { value: nonEmptyCells.toString(), row: sheetIndex, col: 1 },
-          { value: lastUpdated, row: sheetIndex, col: 2 }
+        //   { value: nonEmptyCells.toString(), row: sheetIndex, col: 1 },
+        //   { value: lastUpdated, row: sheetIndex, col: 2 }
         ];
       });
     }
@@ -342,14 +342,19 @@ export function WorkflowBuilder() {
           // Transform 3D data into a flat structure
           sourceSheetData = threeDData.map((sheet, sheetIndex) => {
             const sheetName = sheet.prevRow.find(cell => cell.col === 0)?.value || `Sheet ${sheetIndex + 1}`;
-            return [
-              { value: sheetName, row: sheetIndex, col: 0 },
-              ...sheet.data.flat().map((cell, cellIndex) => ({
-                value: cell.value,
-                row: sheetIndex,
-                col: cellIndex
-              }))
-            ];
+            const rows: Array<{ value: string; row: number; col: number }> = [];
+            
+            sheet.data.forEach((row, rowIndex) => {
+              row.forEach((cell, colIndex) => {
+                rows.push({
+                  value: cell.value,
+                  row: rowIndex,
+                  col: colIndex
+                });
+              });
+            });
+
+            return rows;
           });
         }
 
@@ -363,7 +368,7 @@ export function WorkflowBuilder() {
                 name: 'Source', 
                 prevRows: sourceStep.data.map(sheet => sheet.prevRow),
                 data: sourceSheetData,
-                columns: ['Category', 'Count', 'Last Updated']
+                columns: ['Sheet Name']
               }]}
               prevTableHeaders={prevTableHeaders}
               initialData={step.data as Array<Array<{ value: string; row: number; col: number }>>}
@@ -374,14 +379,12 @@ export function WorkflowBuilder() {
       case 'llm_pipe':
         const prevStep = workflowSteps[index - 1];
         let headers: string[];
-        if (prevStep.type === 'single' || prevStep.type === '3d') {
+        if (prevStep.type === 'single' || prevStep.type === '3d' || prevStep.type === 'aggregation') {
           // For single and 3D sheets, get headers from the ref
           const prevRef = stepsRefs.current[index - 1];
           headers = prevRef?.current?.getHeaders?.() || ['Input'];
-        } else {
-          // For aggregation, use fixed headers
-          headers = ['Category', 'Count', 'Last Updated'];
-        }
+        } 
+        
         return (
           <div key={index} className="mb-8">
             <LLMPipeSpreadsheet

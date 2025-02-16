@@ -16,8 +16,10 @@ interface AggregationRequest {
 export async function POST(req: Request) {
   try {
     const body = await req.json() as AggregationRequest;
-    // drop the first row of the data
-    const data = body.data.cells.slice(1);
+    
+    // Get the previous sheet name from the first cell of prevRow
+    const prevSheetName = body.data.prevRow[0]?.value || body.sheetName;
+    
     // Construct prompt for LLM
     const prompt = `
       Analyze this data follow the provided instructions to aggregate the data:
@@ -28,22 +30,37 @@ export async function POST(req: Request) {
       Data:
       ${JSON.stringify(body.data.cells, null, 2)}
       
-      Here are the columns you should return: Sheet,${body.columns.join(', ')}
+      Here are the columns you should return: ${body.columns.join(', ')}
+      You should return ${body.columns.length} values.
 
-      Previous Row Context:
-      ${JSON.stringify(body.data.prevRow, null, 2)}
+      The value to return for the Sheet Name (first column) is: ${prevSheetName}
+      Return the other values after that.
 
+      Return the data as a list of strings in the above order.
+      You should return a list of length equal to the number of columns. That means you should aggregate the data into one row.
+      Make sure all values are strings.
+
+      Return only the JSON list.
     `;
 
-    const llmResponse = await llm(prompt);
+    const llmResponse = await llm(prompt, 'gpt-4o');
+    let parsedData = {};
+    
+    try {
+      parsedData = JSON.parse(llmResponse.text);
+      // Ensure all values are strings
+    } catch (error) {
+      console.error('Error parsing LLM response:', error);
+      parsedData = {};
+    }
 
     // Return aggregated results
     return NextResponse.json({
       success: true,
-      sheetName: body.sheetName,
+      sheetName: prevSheetName,
       count: body.data.cells.length,
       lastUpdated: new Date().toISOString(),
-      aggregatedInsights: llmResponse.text
+      aggregatedInsights: parsedData
     });
 
   } catch (error) {
@@ -55,7 +72,7 @@ export async function POST(req: Request) {
         sheetName: '',
         count: 0,
         lastUpdated: '',
-        aggregatedInsights: ''
+        aggregatedInsights: {}
       },
       { status: 500 }
     );
