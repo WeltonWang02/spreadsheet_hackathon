@@ -301,11 +301,16 @@ const ThreeDSpreadsheet = forwardRef<
           const responseData = await response.json();
           
           if (responseData.success && responseData.results) {
-            return Object.entries(responseData.results).map(([colName, value], colIndex) => ({
-              value: colIndex === 0 ? row[0]?.value || firstColumnCell.value : value as string,
-              row: rowIndex,
-              col: colIndex
-            }));
+            return [
+              // Keep the first column unchanged
+              { value: row[0]?.value || firstColumnCell.value, row: rowIndex, col: 0 },
+              // Map the remaining columns by their header names
+              ...headers.slice(1).map((header, colIndex) => ({
+                value: responseData.results[header] || '',
+                row: rowIndex,
+                col: colIndex + 1
+              }))
+            ];
           }
           return row;
         });

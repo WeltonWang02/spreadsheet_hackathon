@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     if (!taskResponse.output) {
       throw new Error('No output returned from task');
     }
-
+    
     return NextResponse.json({
       success: true,
       results: taskResponse.output,
