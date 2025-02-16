@@ -15,7 +15,6 @@ export function WorkflowBuilder() {
   const [isRunningAll, setIsRunningAll] = useState(false);
   const stepsRefs = useRef<(React.RefObject<any>)[]>([]);
 
-  // Keep refs array in sync with steps
   useEffect(() => {
     // Initialize refs for all steps
     stepsRefs.current = workflowSteps.map((_, i) => {
