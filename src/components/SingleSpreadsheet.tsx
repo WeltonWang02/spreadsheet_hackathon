@@ -7,6 +7,7 @@ interface SingleSpreadsheetProps {
   initialData?: Array<{ value: string; row: number; col: number }>;
   aggregationCriteria?: string;
   isAggregation?: boolean;
+  prevTableHeaders?: string[];
   sourceSheets?: Array<{
     name: string;
     data: Array<Array<{ value: string; row: number; col: number }>>;
@@ -28,6 +29,7 @@ export const SingleSpreadsheet = forwardRef<
   initialData,
   aggregationCriteria,
   isAggregation,
+  prevTableHeaders,
   sourceSheets
 }, ref) => {
   const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>(() => {
@@ -78,6 +80,7 @@ export const SingleSpreadsheet = forwardRef<
           body: JSON.stringify({
             data: sheet, // Send the entire sheet
             columns: sourceSheets[0].columns,
+            prevTableHeaders: prevTableHeaders || [], // Pass the previous table headers
             sheetName: `Sheet ${sheetIndex + 1}`,
             sheetIndex
           }),

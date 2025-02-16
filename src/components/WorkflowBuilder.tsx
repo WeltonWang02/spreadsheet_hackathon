@@ -175,13 +175,47 @@ export function WorkflowBuilder() {
   };
 
   const handleAggregate = async (stepIndex: number) => {
-    const sourceData = workflowSteps[stepIndex].data;
-    
-    // Simply create the aggregation component with the source data
+    const sourceStep = workflowSteps[stepIndex];
     const newSteps = [...workflowSteps];
+    
+    // Transform the source data based on its type
+    let sourceData: Array<Array<{ value: string; row: number; col: number }>> = [];
+    let prevTableHeaders: string[] = [];
+    
+    if (sourceStep.type === '3d') {
+      // For 3D sheets, we need to transform the data structure
+      const threeDData = sourceStep.data as Array<{ 
+        prevRow: Array<{ value: string; row: number; col: number }>;
+        data: Array<{ value: string; row: number; col: number }[]>;
+      }>;
+
+      // Get headers from the ref
+      const sourceRef = stepsRefs.current[stepIndex];
+      prevTableHeaders = sourceRef?.current?.getHeaders?.() || [];
+
+      // Create a row for each sheet in the 3D view
+      sourceData = threeDData.map((sheet, sheetIndex) => {
+        // Get the sheet name from prevRow's first column
+        const sheetName = sheet.prevRow.find(cell => cell.col === 0)?.value || `Sheet ${sheetIndex + 1}`;
+        
+        // Count non-empty cells in the sheet's data
+        const nonEmptyCells = sheet.data.flat().filter(cell => cell.value.trim() !== '').length;
+        
+        // Get the last updated time (current time for now)
+        const lastUpdated = new Date().toISOString();
+        
+        // Return a row with [Category, Count, Last Updated]
+        return [
+          { value: sheetName, row: sheetIndex, col: 0 },
+          { value: nonEmptyCells.toString(), row: sheetIndex, col: 1 },
+          { value: lastUpdated, row: sheetIndex, col: 2 }
+        ];
+      });
+    }
+
     newSteps.push({ 
       type: 'aggregation', 
-      data: [[{ value: '', row: 0, col: 0 }]] // Start with empty data
+      data: sourceData
     });
     setWorkflowSteps(newSteps);
   };
@@ -280,15 +314,46 @@ export function WorkflowBuilder() {
           <div key={index} className="mb-8">
             <ThreeDSpreadsheet
               ref={stepsRefs.current[index]}
-              data={step.data}
+              data={step.data as Array<{ 
+                prevRow: Array<{ value: string; row: number; col: number }>;
+                data: Array<{ value: string; row: number; col: number }[]>;
+              }>}
               onDataChange={(newData) => handleDataChange(index, newData)}
             />
             {renderActionButtons(step, index)}
           </div>
         );
       case 'aggregation':
-        console.log('aggregation', workflowSteps);
-      return (
+        // Get the source data and transform it for the aggregation view
+        const sourceStep = workflowSteps[index - 1];
+        let sourceSheetData: Array<Array<{ value: string; row: number; col: number }>> = [];
+        let prevTableHeaders: string[] = [];
+
+        if (sourceStep.type === '3d') {
+          const threeDData = sourceStep.data as Array<{ 
+            prevRow: Array<{ value: string; row: number; col: number }>;
+            data: Array<{ value: string; row: number; col: number }[]>;
+          }>;
+
+          // Get headers from the previous step's ref
+          const sourceRef = stepsRefs.current[index - 1];
+          prevTableHeaders = sourceRef?.current?.getHeaders?.() || [];
+
+          // Transform 3D data into a flat structure
+          sourceSheetData = threeDData.map((sheet, sheetIndex) => {
+            const sheetName = sheet.prevRow.find(cell => cell.col === 0)?.value || `Sheet ${sheetIndex + 1}`;
+            return [
+              { value: sheetName, row: sheetIndex, col: 0 },
+              ...sheet.data.flat().map((cell, cellIndex) => ({
+                value: cell.value,
+                row: sheetIndex,
+                col: cellIndex + 1
+              }))
+            ];
+          });
+        }
+
+        return (
           <div key={index} className="mb-8">
             <SingleSpreadsheet
               ref={stepsRefs.current[index]}
@@ -296,9 +361,11 @@ export function WorkflowBuilder() {
               aggregationCriteria="Category"
               sourceSheets={[{ 
                 name: 'Source', 
-                data: workflowSteps[index - 1].data,
-                columns: workflowSteps[index - 1].data[0]?.map((cell, i) => `Column ${i + 1}`) || []
+                data: sourceSheetData,
+                columns: ['Category', 'Count', 'Last Updated']
               }]}
+              prevTableHeaders={prevTableHeaders}
+              initialData={step.data as Array<Array<{ value: string; row: number; col: number }>>}
             />
             {renderActionButtons(step, index)}
           </div>
@@ -318,7 +385,9 @@ export function WorkflowBuilder() {
           <div key={index} className="mb-8">
             <LLMPipeSpreadsheet
               ref={stepsRefs.current[index]}
-              sourceData={workflowSteps[index - 1].data}
+              sourceData={Array.isArray(workflowSteps[index - 1].data[0]) 
+                ? workflowSteps[index - 1].data as Array<Array<{ value: string; row: number; col: number }>>
+                : []}
               headers={headers}
             />
             {renderActionButtons(step, index)}
