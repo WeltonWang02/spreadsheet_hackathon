@@ -30,6 +30,7 @@ export default function ThreeDSpreadsheet({
   const [deleteModalSheet, setDeleteModalSheet] = useState<number | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [rowHeaders, setRowHeaders] = useState<string[]>([]);
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
 
   // Initialize from storage or create new sheets
   useEffect(() => {
@@ -136,6 +137,40 @@ export default function ThreeDSpreadsheet({
     setSheetData(newSheetData);
   };
 
+  const handleBulkUpdate = (sheetIndex: number, updates: { row: number; col: number; value: string }[]) => {
+    // Create a copy of the sheet data
+    const newSheetData = [...sheetData];
+    const newSheet = [...newSheetData[sheetIndex]];
+
+    // Apply all updates
+    updates.forEach(({ row, col, value }) => {
+      // Ensure we have enough rows
+      while (newSheet.length <= row) {
+        const newRow = Array(initialCols).fill(null).map((_, colIndex) => ({
+          value: '',
+          row: newSheet.length,
+          col: colIndex
+        }));
+        newSheet.push(newRow);
+      }
+
+      // Update the cell value
+      newSheet[row][col].value = value;
+
+      // Update storage
+      storage.updateSubEntity(
+        sheetIds[sheetIndex],
+        row.toString(),
+        sharedHeaders[col],
+        value
+      );
+    });
+
+    // Update the sheet in the overall data
+    newSheetData[sheetIndex] = newSheet;
+    setSheetData(newSheetData);
+  };
+
   const handleSheetNameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -188,6 +223,56 @@ export default function ThreeDSpreadsheet({
 
     // Show if it's the active sheet or within the visible stack range
     return stackOrder >= 0 && stackOrder < maxVisibleSheets;
+  };
+
+  const handleClearAllSheets = () => {
+    // Delete all entities from storage
+    sheetIds.forEach(id => storage.deleteEntity(id));
+
+    // Reset local state
+    setSheetIds([]);
+    setSheetNames([]);
+    setSheetData([]);
+    setActiveSheet(0);
+    setShowClearAllModal(false);
+
+    // Create initial sheet
+    const entity = storage.createEntity('Sheet 1');
+    storage.initializeEntityRows(entity.id, initialRows);
+    
+    // Update state with new sheet
+    const updatedState = storage.getState();
+    setSheetIds([entity.id]);
+    setSheetNames(['Sheet 1']);
+    setSheetData([storage.getEntityData(entity.id)]);
+  };
+
+  const handleAddColumn = () => {
+    // Generate a new header name
+    const newHeader = String.fromCharCode(65 + sharedHeaders.length);
+    const newHeaders = [...sharedHeaders, newHeader];
+    
+    // Update storage with new headers
+    storage.updateHeaders(newHeaders);
+    
+    // Update local state
+    setSharedHeaders(newHeaders);
+    setSheetData(sheetIds.map(id => storage.getEntityData(id)));
+  };
+
+  const handleAddRow = () => {
+    // Create a new row for each sheet
+    sheetIds.forEach((id, sheetIndex) => {
+      const rowKey = sheetData[sheetIndex].length.toString();
+      
+      // Initialize the new row in storage
+      sharedHeaders.forEach(header => {
+        storage.updateSubEntity(id, rowKey, header, '');
+      });
+    });
+
+    // Update local state
+    setSheetData(sheetIds.map(id => storage.getEntityData(id)));
   };
 
   return (
@@ -265,19 +350,35 @@ export default function ThreeDSpreadsheet({
                 ))}
               </ul>
               
-              {/* Add Sheet Button */}
-              <button
-                onClick={handleAddSheet}
-                className="mt-4 p-3.5 w-full rounded-lg bg-indigo-50 text-indigo-600 
-                  hover:bg-indigo-100 transition-colors duration-150 font-medium
-                  border border-indigo-100 flex items-center justify-center gap-2
-                  hover:shadow-sm active:translate-y-[1px]"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Sheet
-              </button>
+              {/* Action Buttons */}
+              <div className="space-y-3 mt-4">
+                <button
+                  onClick={handleAddSheet}
+                  className="w-full p-3.5 rounded-lg bg-indigo-50 text-indigo-600 
+                    hover:bg-indigo-100 transition-colors duration-150 font-medium
+                    border border-indigo-100 flex items-center justify-center gap-2
+                    hover:shadow-sm active:translate-y-[1px]"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Sheet
+                </button>
+
+                <button
+                  onClick={() => setShowClearAllModal(true)}
+                  className="w-full p-3.5 rounded-lg bg-red-50 text-red-600 
+                    hover:bg-red-100 transition-colors duration-150 font-medium
+                    border border-red-100 flex items-center justify-center gap-2
+                    hover:shadow-sm active:translate-y-[1px]"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Clear All Sheets
+                </button>
+              </div>
             </div>
           </div>
 
@@ -372,6 +473,10 @@ export default function ThreeDSpreadsheet({
                       onHeaderChange={handleHeaderChange}
                       onCellChange={(row, col, value) => handleCellChange(index, row, col, value)}
                       sheetName={sheetNames[index]}
+                      isSidebarOpen={isSidebarOpen}
+                      onBulkUpdate={(updates) => handleBulkUpdate(index, updates)}
+                      onAddColumn={handleAddColumn}
+                      onAddRow={handleAddRow}
                     />
                   </div>
                 </div>
@@ -388,6 +493,35 @@ export default function ThreeDSpreadsheet({
               </div>
             )}
           </div>
+
+          {/* Clear All Confirmation Modal */}
+          {showClearAllModal && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+              <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Clear All Sheets</h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete all sheets? This action cannot be undone and will leave you with a single empty sheet.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowClearAllModal(false)}
+                    className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 
+                      font-medium transition-colors duration-150"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleClearAllSheets}
+                    className="px-4 py-2 rounded-lg bg-red-500 text-white 
+                      hover:bg-red-600 font-medium transition-colors duration-150
+                      shadow-sm hover:shadow active:translate-y-[1px]"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Delete Confirmation Modal */}
           {deleteModalSheet !== null && (
