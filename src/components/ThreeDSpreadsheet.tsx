@@ -20,6 +20,8 @@ export default function ThreeDSpreadsheet({
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 }); // Track visible sheets
   const [headers, setHeaders] = useState<string[]>(['Find all items']);
   const [showRunDropdown, setShowRunDropdown] = useState(false);
+  const [title, setTitle] = useState('3D Spreadsheet');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
   
   // Initialize sheet data from source data
   useEffect(() => {
@@ -269,7 +271,32 @@ export default function ThreeDSpreadsheet({
         bg-white border border-gray-200/80 overflow-hidden
       `}>
         <div className="px-6 py-4 border-b border-gray-200/80 bg-white flex items-center justify-between sticky top-0 z-[102]">
-          <h3 className="font-medium text-gray-700">3D Spreadsheet</h3>
+          <div className="flex-1">
+            {isEditingTitle ? (
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => setIsEditingTitle(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setIsEditingTitle(false);
+                  }
+                }}
+                placeholder="Enter spreadsheet name..."
+                className="w-full px-0 font-medium text-gray-700 bg-transparent border-none 
+                  focus:outline-none focus:ring-0 placeholder-gray-400"
+                autoFocus
+              />
+            ) : (
+              <h3 
+                className="font-medium text-gray-700 cursor-text hover:text-gray-900"
+                onClick={() => setIsEditingTitle(true)}
+              >
+                {title}
+              </h3>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
@@ -351,7 +378,7 @@ export default function ThreeDSpreadsheet({
           relative 
           ${isExpanded 
             ? 'h-[calc(100%-4rem)] p-8 pl-5 pb-12' 
-            : 'h-[calc(100%-4rem)] p-4 overflow-hidden'}
+            : 'h-[calc(100%-4rem)] pr-8 pb-10 pl-6 pt-4 overflow-hidden'}
         `}>
           {/* Sidebar */}
           {isExpanded && (
