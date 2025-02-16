@@ -126,6 +126,10 @@ export function WorkflowBuilder() {
     const newSteps = [...workflowSteps];
     newSteps[stepIndex].data = newData;
 
+    // Get current step's headers
+    const currentRef = stepsRefs.current[stepIndex];
+    const currentHeaders = currentRef?.current?.getHeaders?.() || [];
+
     // If this is a single spreadsheet and there's a 3D spreadsheet next
     if (newSteps[stepIndex].type === 'single' && 
         stepIndex + 1 < newSteps.length && 
@@ -135,7 +139,6 @@ export function WorkflowBuilder() {
       const threeDData = singleSheetData.slice(1).map(row => ({
         prevRow: row,
         data: [
-            // []
           [{ col: 0, row: 0, value: '' }]
         ]
       }));
@@ -144,31 +147,22 @@ export function WorkflowBuilder() {
 
     // If this step has an LLM pipe next, update its data
     if (stepIndex + 1 < newSteps.length && newSteps[stepIndex + 1].type === 'llm_pipe') {
-      const currentData = Array.isArray(newData[0]) 
-        ? newData as Array<Array<{ value: string; row: number; col: number }>>
-        : (newData as Array<{ prevRow: Array<{ value: string; row: number; col: number }>; data: Array<{ value: string; row: number; col: number }[]> }>)
-          .map(item => item.prevRow);
+      let llmSourceData: Array<Array<{ value: string; row: number; col: number }>> = [];
 
-      // Create a key-value listing of all columns for each row
-      const llmData = currentData.map(row => {
-        const rowContent = row.map((cell, colIndex) => {
-          const columnName = newSteps[stepIndex].type === 'single' ? `Column ${colIndex + 1}` : cell.col.toString();
-          return `${columnName}: ${cell.value}`;
-        }).join('\n');
+      if (Array.isArray(newData[0])) {
+        // For single sheet or aggregation data
+        llmSourceData = newData as Array<Array<{ value: string; row: number; col: number }>>;
+      } else {
+        // For 3D sheet data, flatten it
+        const threeDData = newData as Array<{ 
+          prevRow: Array<{ value: string; row: number; col: number }>;
+          data: Array<{ value: string; row: number; col: number }[]>;
+        }>;
+        llmSourceData = threeDData.map(sheet => sheet.prevRow);
+      }
 
-        // Preserve the existing LLM output if it exists
-        const existingOutput = Array.isArray(newSteps[stepIndex + 1].data[0]) 
-          ? (newSteps[stepIndex + 1].data as Array<Array<{ value: string; row: number; col: number }>>)
-            .find(r => r[0].row === row[0].row)?.[1]?.value || ''
-          : '';
-
-        return [
-          { value: rowContent, row: row[0]?.row || 0, col: 0 },
-          { value: existingOutput, row: row[0]?.row || 0, col: 1 }
-        ];
-      });
-
-      newSteps[stepIndex + 1].data = llmData;
+      // Update the LLM pipe step with new data and headers
+      newSteps[stepIndex + 1].data = llmSourceData;
     }
 
     setWorkflowSteps(newSteps);
@@ -329,7 +323,7 @@ export function WorkflowBuilder() {
         let sourceSheetData: Array<Array<{ value: string; row: number; col: number }>> = [];
         let prevTableHeaders: string[] = [];
 
-        if (sourceStep.type === '3d') {
+        if (sourceStep?.type === '3d') {
           const threeDData = sourceStep.data as Array<{ 
             prevRow: Array<{ value: string; row: number; col: number }>;
             data: Array<{ value: string; row: number; col: number }[]>;
@@ -342,19 +336,7 @@ export function WorkflowBuilder() {
           // Transform 3D data into a flat structure
           sourceSheetData = threeDData.map((sheet, sheetIndex) => {
             const sheetName = sheet.prevRow.find(cell => cell.col === 0)?.value || `Sheet ${sheetIndex + 1}`;
-            const rows: Array<{ value: string; row: number; col: number }> = [];
-            
-            sheet.data.forEach((row, rowIndex) => {
-              row.forEach((cell, colIndex) => {
-                rows.push({
-                  value: cell.value,
-                  row: rowIndex,
-                  col: colIndex
-                });
-              });
-            });
-
-            return rows;
+            return sheet.data.flat();
           });
         }
 
@@ -363,36 +345,43 @@ export function WorkflowBuilder() {
             <SingleSpreadsheet
               ref={stepsRefs.current[index]}
               isAggregation={true}
-              aggregationCriteria="Category"
               sourceSheets={[{ 
                 name: 'Source', 
-                prevRows: sourceStep.data.map(sheet => sheet.prevRow),
+                prevRows: sourceStep?.data.map((sheet: any) => sheet.prevRow) || [],
                 data: sourceSheetData,
-                columns: ['Sheet Name']
+                columns: prevTableHeaders
               }]}
               prevTableHeaders={prevTableHeaders}
-              initialData={step.data as Array<Array<{ value: string; row: number; col: number }>>}
+              onRowsChanged={(newData) => handleDataChange(index, newData)}
             />
             {renderActionButtons(step, index)}
           </div>
         );
       case 'llm_pipe':
         const prevStep = workflowSteps[index - 1];
-        let headers: string[];
-        if (prevStep.type === 'single' || prevStep.type === '3d' || prevStep.type === 'aggregation') {
-          // For single and 3D sheets, get headers from the ref
-          const prevRef = stepsRefs.current[index - 1];
-          headers = prevRef?.current?.getHeaders?.() || ['Input'];
-        } 
+        const prevRef = stepsRefs.current[index - 1];
+        const headers = prevRef?.current?.getHeaders?.() || ['Input'];
+        let sourceDataForLLM: Array<Array<{ value: string; row: number; col: number }>> = [];
+
+        if (prevStep) {
+          if (Array.isArray(prevStep.data[0])) {
+            sourceDataForLLM = prevStep.data as Array<Array<{ value: string; row: number; col: number }>>;
+          } else {
+            const threeDData = prevStep.data as Array<{ 
+              prevRow: Array<{ value: string; row: number; col: number }>;
+              data: Array<{ value: string; row: number; col: number }[]>;
+            }>;
+            sourceDataForLLM = threeDData.map(sheet => sheet.prevRow);
+          }
+        }
         
         return (
           <div key={index} className="mb-8">
             <LLMPipeSpreadsheet
               ref={stepsRefs.current[index]}
-              sourceData={Array.isArray(workflowSteps[index - 1].data[0]) 
-                ? workflowSteps[index - 1].data as Array<Array<{ value: string; row: number; col: number }>>
-                : []}
+              sourceData={sourceDataForLLM}
               headers={headers}
+              onDataChange={(newData) => handleDataChange(index, newData)}
             />
             {renderActionButtons(step, index)}
           </div>

@@ -40,13 +40,15 @@ export const SingleSpreadsheet = forwardRef<
     }
     return [initialData];
   });
+
   const [headers, setHeaders] = useState<string[]>(() => {
     if (isAggregation && sourceSheets?.[0]?.columns) {
-      // For aggregation view, use the source sheet columns
-      return ['Sheet Name', ...sourceSheets[0].columns.slice(1)];
+      // Start with source columns for aggregation view
+      return sourceSheets[0].columns;
     }
     return ['Input'];
   });
+
   const [title, setTitle] = useState(
     aggregationCriteria ? `Aggregate sheet ${aggregationCriteria}` : 'Datasheet'
   );
@@ -64,20 +66,74 @@ export const SingleSpreadsheet = forwardRef<
     handleRunCells,
     handleRunAggregation,
     getHeaders: () => {
-      if (isAggregation && sourceSheets?.[0]?.columns) {
-        return ['Sheet Name', 'Count', 'Last Updated', ...sourceSheets[0].columns.slice(1)];
+      if (isAggregation) {
+        // For aggregation sheets, return the current headers
+        return headers;
       }
       return headers;
     }
   }));
 
+  // Update sourceSheets columns when headers change
+  const updateSourceColumns = (newHeaders: string[]) => {
+    if (sourceSheets && sourceSheets.length > 0) {
+      sourceSheets[0].columns = newHeaders;
+    }
+  };
+
+  const handleHeaderChange = (colIndex: number, value: string) => {
+    const newHeaders = [...headers];
+    newHeaders[colIndex] = value;
+    setHeaders(newHeaders);
+    updateSourceColumns(newHeaders);
+    
+    // Notify parent of header changes through data change
+    const newData = data.map(row => {
+      return row.map((cell, idx) => ({
+        ...cell,
+        header: idx === colIndex ? value : headers[idx]
+      }));
+    });
+    onRowsChanged?.(newData);
+  };
+
+  const handleAddColumn = () => {
+    const newHeaders = [...headers, `Column ${headers.length + 1}`];
+    setHeaders(newHeaders);
+    updateSourceColumns(newHeaders);
+    
+    // Add empty values for the new column in all existing rows
+    const newData = data.map(row => [
+      ...row,
+      { value: '', row: row[0].row, col: headers.length }
+    ]);
+    setData(newData);
+    onRowsChanged?.(newData);
+  };
+
+  const handleDeleteColumn = (colIndex: number) => {
+    if (headers.length <= 1) return; // Don't delete the last column
+    
+    const newHeaders = headers.filter((_, i) => i !== colIndex);
+    setHeaders(newHeaders);
+    updateSourceColumns(newHeaders);
+    
+    // Remove the column from all rows
+    const newData = data.map(row => 
+      row.filter((_, i) => i !== colIndex)
+        .map((cell, i) => ({ ...cell, col: i }))
+    );
+    setData(newData);
+    onRowsChanged?.(newData);
+  };
+
   const handleRunAggregation = async () => {
-    if (!sourceSheets || !isAggregation) return;
+    if (!isAggregation) return;
     setIsRunningAggregation(true);
 
     try {
       // Get all sheets from the source 3D spreadsheet
-      const threeDSheets = sourceSheets[0].data;
+      const threeDSheets = sourceSheets?.[0]?.data || [];
       console.log('Processing sheets:', threeDSheets.length);
       
       // Make one API call per sheet in the 3D spreadsheet
@@ -90,9 +146,9 @@ export const SingleSpreadsheet = forwardRef<
           body: JSON.stringify({
             data: {
               cells: sheet,
-              prevRow: sourceSheets[0].prevRows[sheetIndex] || []
+              prevRow: sourceSheets?.[0]?.prevRows[sheetIndex] || []
             },
-            columns: sourceSheets[0].columns,
+            columns: headers, // Use current headers instead of sourceSheets columns
             prevTableHeaders: prevTableHeaders || [],
             aggregationPrompt,
             sheetName: `Sheet ${sheetIndex + 1}`,
@@ -112,25 +168,28 @@ export const SingleSpreadsheet = forwardRef<
       const newData = results.map((result, rowIndex) => {
         if (!result.success) return null;
 
-        const row = [
-          { value: result.sheetName || `Sheet ${rowIndex + 1}`, row: rowIndex, col: 0 },
-        ];
+        // Create a row with values matching the header order
+        const row = headers.map((header, colIndex) => {
+          if (colIndex === 0) {
+            // First column is always the sheet name
+            return {
+              value: result.sheetName || `Sheet ${rowIndex + 1}`,
+              row: rowIndex,
+              col: colIndex
+            };
+          }
 
-        // Add any additional insights from the aggregation
-        if (result.aggregatedInsights) {
-          Object.entries(result.aggregatedInsights).forEach(([key, value], colIndex) => {
-            if (colIndex > 0) { // Skip the first column since we already have the sheet name
-              row.push({
-                value: value?.toString() || '',
-                row: rowIndex,
-                col: colIndex + 2
-              });
-            }
-          });
-        }
+          // Get the value from aggregatedInsights that matches this header
+          const value = result.aggregatedInsights[header];
+          return {
+            value: value?.toString() || '',
+            row: rowIndex,
+            col: colIndex
+          };
+        });
 
         return row;
-      }).filter(Boolean);
+      }).filter(Boolean) as Array<Array<{ value: string; row: number; col: number }>>;
 
       setData(newData);
       onRowsChanged?.(newData);
@@ -164,32 +223,6 @@ export const SingleSpreadsheet = forwardRef<
     setData([...data, newRow]);
   };
 
-  const handleAddColumn = () => {
-    const newHeaders = [...headers, `Column ${headers.length + 1}`];
-    setHeaders(newHeaders);
-    
-    // Add empty values for the new column in all existing rows
-    const newData = data.map(row => [
-      ...row,
-      { value: '', row: row[0].row, col: row[0].col + 1 }
-    ]);
-    setData(newData);
-  };
-
-  const handleDeleteColumn = (colIndex: number) => {
-    if (headers.length <= 1) return; // Don't delete the last column
-    
-    const newHeaders = headers.filter((_, i) => i !== colIndex);
-    setHeaders(newHeaders);
-    
-    // Remove the column from all rows
-    const newData = data.map(row => 
-      row.filter((_, i) => i !== colIndex)
-        .map((cell, i) => ({ ...cell, col: i }))
-    );
-    setData(newData);
-  };
-
   const handleDeleteRow = (rowIndex: number) => {
     const newData = data.filter((_, i) => i !== rowIndex)
       .map((row, newRowIndex) => 
@@ -198,19 +231,19 @@ export const SingleSpreadsheet = forwardRef<
     setData(newData);
   };
 
-  const handleHeaderChange = (colIndex: number, value: string) => {
-    const newHeaders = [...headers];
-    newHeaders[colIndex] = value;
-    setHeaders(newHeaders);
-  };
-
   const handlePipeToLLM = async () => {
     setShowLLMPipe(true);
-    setHeaders(['Input', 'Output']);
-    // Keep only first column data as input
+    
+    // Keep existing first column header and add 'Output' for each additional column
+    const existingFirstHeader = headers[0];
+    const newHeaders = [existingFirstHeader, ...headers.slice(1).map((_, index) => `Output ${index + 1}`)];
+    setHeaders(newHeaders);
+    updateSourceColumns(newHeaders);
+
+    // Preserve first column data and prepare for LLM processing
     const inputData = data.map(row => ({
       value: row[0]?.value || '',
-      row: 0,
+      row: row[0]?.row || 0,
       col: 0
     }));
     
@@ -221,27 +254,53 @@ export const SingleSpreadsheet = forwardRef<
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ inputs: inputData.map(cell => cell.value) }),
+        body: JSON.stringify({ 
+          inputs: inputData.map(cell => cell.value),
+          numOutputs: newHeaders.length - 1 // Number of output columns needed
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to process through LLM');
       
       const { outputs } = await response.json();
       
-      // Create two-column data with input and output
-      const newData = inputData.map((input, index) => [
-        input,
-        {
-          value: outputs[index] || '',
-          row: 0,
-          col: 1
+      // Create multi-column data preserving the input and adding outputs
+      const newData = inputData.map((input, rowIndex) => {
+        // Start with the input column
+        const row = [input];
+        
+        // Add output columns
+        for (let colIndex = 1; colIndex < newHeaders.length; colIndex++) {
+          row.push({
+            value: outputs[rowIndex]?.[colIndex - 1] || '',
+            row: rowIndex,
+            col: colIndex
+          });
         }
-      ]);
+        
+        return row;
+      });
 
       setData(newData);
       onRowsChanged?.(newData);
     } catch (error) {
       console.error('Error processing through LLM:', error);
+      
+      // If there's an error, still maintain the structure but with empty outputs
+      const newData = inputData.map((input, rowIndex) => {
+        const row = [input];
+        for (let colIndex = 1; colIndex < newHeaders.length; colIndex++) {
+          row.push({
+            value: '',
+            row: rowIndex,
+            col: colIndex
+          });
+        }
+        return row;
+      });
+      
+      setData(newData);
+      onRowsChanged?.(newData);
     }
   };
 

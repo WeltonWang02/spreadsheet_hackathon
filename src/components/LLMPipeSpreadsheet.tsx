@@ -21,9 +21,10 @@ export const LLMPipeSpreadsheet = forwardRef<
 
     // Format each row as key-value pairs using provided headers
     const formattedData = sourceData.map(row => {
-      const formattedValue = row.map((cell, colIndex) => {
-        const header = headers[colIndex] || `Column ${colIndex + 1}`;
-        return `${header}: ${cell.value}`;
+      // Create a formatted string with header-value pairs
+      const formattedValue = headers.map((header, index) => {
+        const cellValue = row[index]?.value || '';
+        return `${header}: ${cellValue}`;
       }).join('\n');
 
       return [
@@ -47,10 +48,10 @@ export const LLMPipeSpreadsheet = forwardRef<
         body: JSON.stringify({
           inputs: sourceData.map(row => {
             // Create an object with proper column names as keys
-            return row.reduce((acc, cell, colIndex) => {
-              const header = headers[colIndex] || `Column ${colIndex + 1}`;
-              return { ...acc, [header]: cell.value || '' };
-            }, {});
+            return headers.reduce((acc, header, index) => {
+              acc[header] = row[index]?.value || '';
+              return acc;
+            }, {} as Record<string, string>);
           }),
           prompt
         }),
@@ -63,7 +64,11 @@ export const LLMPipeSpreadsheet = forwardRef<
       // Update the output column with LLM responses
       const newData = data.map((row, index) => [
         row[0], // Keep the formatted input
-        { value: outputs[index]?.text || '', row: row[0].row, col: 1 }
+        { 
+          value: outputs[index]?.text || '', 
+          row: row[0].row, 
+          col: 1 
+        }
       ]);
 
       setData(newData);
