@@ -276,17 +276,20 @@ export function WorkflowBuilder() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 flex flex-col items-center gap-8">
-      {workflowSteps.length > 0 && (
-        <button
-          onClick={runAll}
-          disabled={isRunningAll}
-          className="mt-2 px-4 py-2 bg-indigo-500 text-white font-medium
-            hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
-            shadow-sm hover:shadow active:translate-y-[1px]"
-        >
-          {isRunningAll ? 'Running All...' : 'Run All Steps'}
-        </button>
-      )}
+      <div className="w-full max-w-[800px] flex justify-between items-center">
+        <h1 className="text-2xl font-semibold text-gray-800">Spreadsheet Workflow Builder</h1>
+        {workflowSteps.length > 0 && (
+          <button
+            onClick={runAll}
+            disabled={isRunningAll}
+            className="px-4 py-2 bg-indigo-500 text-white font-medium
+              hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
+              shadow-sm hover:shadow active:translate-y-[1px]"
+          >
+            {isRunningAll ? 'Running All...' : 'Run All Steps'}
+          </button>
+        )}
+      </div>
       {showInitialButton && (
         <button
           onClick={handleCreateInitialSheet}
