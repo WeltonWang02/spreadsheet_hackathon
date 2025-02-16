@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       name: "Process Row Data", 
       description: "Process data",
       model: "helium",
-      prompt: `For the entity{input}, find the relevant output data on it.`,
+      prompt: "For the entity {input}, find the " + columns,
       input_schema: {
         type: "object",
         properties: {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
         properties: Object.keys(columns).reduce((acc, colName) => {
           acc[colName] = {
             type: "string", 
-            description: `Value for ${colName}`
+            description: `${colName}`
           };
           return acc;
         }, {} as Record<string, { type: string; description: string }>),
