@@ -31,7 +31,7 @@ export default function ThreeDSpreadsheet({
     // Create empty sheet data for each source row
     const newSheetData = sourceData.map(() => {
       // Create 5 empty rows for each sheet
-      return Array(1).fill(null).map((_, rowIndex) => 
+      return Array(3).fill(null).map((_, rowIndex) => 
         headers.map((_, colIndex) => ({
           value: '',
           row: rowIndex,

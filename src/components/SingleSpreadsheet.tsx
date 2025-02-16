@@ -5,16 +5,26 @@ interface SingleSpreadsheetProps {
   onRowsChanged?: (rows: any[]) => void;
   onExpandChange?: (expanded: boolean) => void;
   onStartConnection?: () => void;
+  initialData?: Array<{ value: string; row: number; col: number }>;
+  aggregationCriteria?: string;
 }
 
 export function SingleSpreadsheet({
   onRowsChanged,
   onExpandChange,
   onStartConnection,
+  initialData,
+  aggregationCriteria
 }: SingleSpreadsheetProps) {
-  const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>([]);
-  const [headers, setHeaders] = useState<string[]>(['Name']);
-  const [title, setTitle] = useState('Source Spreadsheet');
+  const [data, setData] = useState<Array<Array<{ value: string; row: number; col: number }>>>(
+    initialData ? [initialData] : []
+  );
+  const [headers, setHeaders] = useState<string[]>(
+    aggregationCriteria ? [aggregationCriteria, 'Count', 'Last Updated'] : ['Name']
+  );
+  const [title, setTitle] = useState(
+    aggregationCriteria ? `Aggregated by ${aggregationCriteria}` : 'Source Spreadsheet'
+  );
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -85,15 +95,14 @@ export function SingleSpreadsheet({
     <>
       <div className={`
         ${isExpanded 
-          ? 'fixed w-[calc(100vw-20px)] h-[95vh] left-10px top-0px !pointer-events-auto' 
+          ? 'fixed inset-0 !pointer-events-auto z-[100] bg-gray-50/80' 
           : 'relative w-full h-[300px]'}
         transition-all duration-200
-      `}
-        style={{
-          pointerEvents: isExpanded ? 'auto' : undefined
-        }}
-      >
-        <div className="w-full h-full bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden">
+      `}>
+        <div className={`
+          ${isExpanded ? 'absolute inset-4' : 'relative w-full h-full'}
+          bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden
+        `}>
           <div className="px-6 py-4 border-b border-gray-200/80 bg-white flex items-center justify-between">
             <div className="flex-1">
               {isEditingTitle ? (
