@@ -34,6 +34,7 @@ export function WorkflowBuilder() {
   const [isAssistantOpen, setIsAssistantOpen] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
   const lastUpdateTimeRef = useRef<number>(0);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleAddSpreadsheet = (type: 'single' | '3d') => {
     const canvasRect = canvasRef.current?.getBoundingClientRect();
@@ -85,7 +86,21 @@ export function WorkflowBuilder() {
     setConnections(connections.filter(c => c.sourceId !== nodeId && c.targetId !== nodeId));
   };
 
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (isExpanded) return;
+    if (e.target === canvasRef.current || e.target === canvasRef.current?.firstChild) {
+      setDragState({
+        nodeId: 'canvas',
+        startX: e.clientX,
+        startY: e.clientY,
+        originalX: canvasOffset.x,
+        originalY: canvasOffset.y
+      });
+    }
+  };
+
   const handleMouseDown = (e: React.MouseEvent, nodeId: string) => {
+    if (isExpanded) return;
     const node = nodes.find(n => n.id === nodeId);
     if (node) {
       setDragState({
@@ -94,18 +109,6 @@ export function WorkflowBuilder() {
         startY: e.clientY,
         originalX: node.position.x,
         originalY: node.position.y
-      });
-    }
-  };
-
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    if (e.target === canvasRef.current || e.target === canvasRef.current?.firstChild) {
-      setDragState({
-        nodeId: 'canvas',
-        startX: e.clientX,
-        startY: e.clientY,
-        originalX: canvasOffset.x,
-        originalY: canvasOffset.y
       });
     }
   };
@@ -121,7 +124,7 @@ export function WorkflowBuilder() {
   };
 
   const handleMouseMove = throttleMouseMove((e: React.MouseEvent) => {
-    if (!dragState) return;
+    if (!dragState || isExpanded) return;
 
     const deltaX = e.clientX - dragState.startX;
     const deltaY = e.clientY - dragState.startY;
@@ -169,7 +172,7 @@ export function WorkflowBuilder() {
   return (
     <div className="min-h-screen bg-gray-50 p-8 flex">
       {/* Toolbar */}
-      <div className="fixed top-8 left-8 space-y-4 z-50">
+      <div className={`fixed top-8 left-8 space-y-4 z-50 ${isExpanded ? 'pointer-events-none' : ''}`}>
         <button
           onClick={() => handleAddSpreadsheet('single')}
           className="w-48 p-3 rounded-lg bg-white shadow-sm hover:shadow-md
@@ -199,7 +202,8 @@ export function WorkflowBuilder() {
       {/* Canvas */}
       <div 
         ref={canvasRef}
-        className="relative flex-1 h-full min-h-[800px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-grab active:cursor-grabbing"
+        className={`relative flex-1 h-full min-h-[800px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden
+          ${isExpanded ? 'pointer-events-none' : 'cursor-grab active:cursor-grabbing'}`}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -267,17 +271,22 @@ export function WorkflowBuilder() {
           {nodes.map(node => (
             <div
               key={node.id}
-              className={`absolute p-0 rounded-xl transition-transform duration-75
+              className={`absolute p-0 rounded-xl transition-all duration-200
                 ${selectedNode === node.id ? 'ring-2 ring-indigo-400' : ''}
                 ${isConnecting ? 'cursor-pointer' : 'cursor-move'}
                 ${dragState?.nodeId === node.id ? 'z-50' : 'z-40'}
+                ${isExpanded && node.id !== selectedNode ? 'pointer-events-none opacity-50' : ''}
+                ${isExpanded && node.id === selectedNode ? 'fixed inset-4 m-0 !w-auto' : ''}
               `}
               style={{
-                transform: `translate3d(${node.position.x}px, ${node.position.y}px, 0) ${dragState?.nodeId === node.id ? 'scale(1.02)' : 'scale(1)'}`,
+                transform: isExpanded && node.id === selectedNode 
+                  ? 'none'
+                  : `translate3d(${node.position.x}px, ${node.position.y}px, 0) ${dragState?.nodeId === node.id ? 'scale(1.02)' : 'scale(1)'}`,
                 width: node.type === 'single' ? '600px' : '600px',
                 willChange: 'transform'
               }}
               onClick={() => {
+                if (isExpanded) return;
                 if (isConnecting) {
                   handleCompleteConnection(node.id);
                 } else {
@@ -285,6 +294,7 @@ export function WorkflowBuilder() {
                 }
               }}
               onMouseDown={(e) => {
+                if (isExpanded) return;
                 if (!isConnecting) {
                   e.stopPropagation();
                   handleMouseDown(e, node.id);
@@ -292,7 +302,9 @@ export function WorkflowBuilder() {
               }}
             >
               {node.type === 'single' ? (
-                <SingleSpreadsheet />
+                <SingleSpreadsheet 
+                  onExpandChange={(expanded) => setIsExpanded(expanded)}
+                />
               ) : (
                 <div className="h-[400px]">
                   <ThreeDSpreadsheet

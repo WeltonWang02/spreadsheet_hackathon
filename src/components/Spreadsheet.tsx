@@ -24,6 +24,7 @@ interface SpreadsheetProps {
   onDeleteColumn?: (colIndex: number) => void;
   onDeleteRow?: (rowIndex: number) => void;
   renderRowPrefix?: (rowIndex: number) => React.ReactNode;
+  firstColumnWidth?: string;
 }
 
 export default function Spreadsheet({ 
@@ -41,7 +42,8 @@ export default function Spreadsheet({
   onRunColumnAllSheets,
   onDeleteColumn,
   onDeleteRow,
-  renderRowPrefix
+  renderRowPrefix,
+  firstColumnWidth
 }: SpreadsheetProps) {
   const [editingHeader, setEditingHeader] = useState<number | null>(null);
   const [cornerValue, setCornerValue] = useState("ID");
@@ -142,14 +144,17 @@ export default function Spreadsheet({
   }, [contextMenu]);
 
   return (
-    <div className="w-fit">
-      <table className="border-collapse w-fit">
+    <div className="w-full">
+      <table className="border-collapse w-full">
         <thead>
           <tr>
             {headers.map((header, index) => (
               <th 
                 key={index} 
-                className="group relative w-48 h-8 bg-gray-50 border border-gray-200 p-0 transition-colors hover:bg-gray-100"
+                className={`
+                  group relative ${index === 0 ? firstColumnWidth || 'min-w-[12rem]' : 'w-48'} h-8 
+                  bg-gray-50 border border-gray-200 p-0 transition-colors hover:bg-gray-100
+                `}
               >
                 <div className="flex items-center h-full">
                   <div className="flex-1">
@@ -197,7 +202,11 @@ export default function Spreadsheet({
               {headers.map((_, colIndex) => (
                 <td
                   key={colIndex}
-                  className={`w-48 h-8 border border-gray-200 px-2 ${colIndex === 0 ? 'bg-gray-50' : ''}`}
+                  className={`
+                    ${colIndex === 0 ? firstColumnWidth || 'min-w-[12rem]' : 'w-48'} 
+                    h-8 border border-gray-200 px-2 
+                    ${colIndex === 0 ? 'bg-gray-50 sticky left-0 z-10' : ''}
+                  `}
                 >
                   <input
                     type="text"
