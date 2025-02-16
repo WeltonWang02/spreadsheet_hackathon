@@ -19,6 +19,7 @@ export default function ThreeDSpreadsheet({
   const [sheetData, setSheetData] = useState<Array<Array<Array<{ value: string; row: number; col: number }>>>>([]);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 2 }); // Track visible sheets
   const [headers, setHeaders] = useState<string[]>(['Find all items']);
+  const [showRunDropdown, setShowRunDropdown] = useState(false);
   
   // Initialize sheet data from source data
   useEffect(() => {
@@ -139,10 +140,127 @@ export default function ThreeDSpreadsheet({
     setSheetData(newSheetData);
   };
 
+  const handleRunFind = async () => {
+    try {
+      // For each sheet, make a findall API call
+      const promises = sourceData.map(async (sheet, sheetIndex) => {
+        // Get the first column value as the query
+        const firstColumnCell = sheet.find(cell => cell.col === 0);
+        if (!firstColumnCell) return;
+
+        const response = await fetch('/api/findall', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: firstColumnCell.value,
+            sheet_level: true
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to run search');
+        
+        const { results } = await response.json();
+        
+        // Update the sheet with results
+        const newSheetData = [...sheetData];
+        if (!newSheetData[sheetIndex]) {
+          newSheetData[sheetIndex] = [];
+        }
+
+        // Create rows from the results
+        results.forEach((result: string, rowIndex: number) => {
+          if (!newSheetData[sheetIndex][rowIndex]) {
+            newSheetData[sheetIndex][rowIndex] = headers.map((_, colIndex) => ({
+              value: colIndex === 0 ? result : '',
+              row: rowIndex,
+              col: colIndex
+            }));
+          } else {
+            newSheetData[sheetIndex][rowIndex][0].value = result;
+          }
+        });
+
+        setSheetData(newSheetData);
+      });
+
+      await Promise.all(promises);
+    } catch (error) {
+      console.error('Error running search:', error);
+    }
+    setShowRunDropdown(false);
+  };
+
+  const handleRunCells = async () => {
+    try {
+      // For each sheet, make a runCells API call
+      const promises = sheetData.map(async (sheet, sheetIndex) => {
+        // Get the first column value as input from sourceData
+        const firstColumnCell = sourceData[sheetIndex]?.find(cell => cell.col === 0);
+        if (!firstColumnCell) return;
+
+        // Create columns object from headers
+        const columns = headers.reduce((acc, header, index) => {
+          acc[header] = ''; // Empty string as initial value
+          return acc;
+        }, {} as { [key: string]: string });
+
+        // For each row in the sheet, make a runCells API call
+        const rowPromises = sheet.map(async (row, rowIndex) => {
+          const response = await fetch('/api/runCells', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              input: row[0]?.value || firstColumnCell.value, // Use row's first column value if exists, otherwise use sheet's first column
+              columns
+            }),
+          });
+
+          if (!response.ok) throw new Error('Failed to run cells');
+          
+          const data = await response.json();
+          
+          // Update the row with results
+          if (data.success && data.results) {
+            const newSheetData = [...sheetData];
+            if (!newSheetData[sheetIndex][rowIndex]) {
+              newSheetData[sheetIndex][rowIndex] = headers.map((_, colIndex) => ({
+                value: '',
+                row: rowIndex,
+                col: colIndex
+              }));
+            }
+            
+            Object.entries(data.results).forEach(([colName, value], colIndex) => {
+              if (colIndex > 0) { // Skip first column
+                newSheetData[sheetIndex][rowIndex][colIndex] = {
+                  value: value as string,
+                  row: rowIndex,
+                  col: colIndex
+                };
+              }
+            });
+            setSheetData(newSheetData);
+          }
+        });
+
+        await Promise.all(rowPromises);
+      });
+
+      await Promise.all(promises);
+    } catch (error) {
+      console.error('Error running cells:', error);
+    }
+    setShowRunDropdown(false);
+  };
+
   return (
     <div className={`
       ${isExpanded 
-        ? 'fixed inset-0 !pointer-events-auto z-[100] bg-gray-50/80 z-index-100' 
+        ? 'fixed inset-0 !pointer-events-auto z-[99999] bg-gray-50/80 z-index-100' 
         : 'w-full h-full'}
       transition-all duration-200
     `}>
@@ -176,35 +294,45 @@ export default function ThreeDSpreadsheet({
                 </>
               )}
             </button>
-            <button
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/findall', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      query: 'Run all sheets',
-                      sheet_level: true
-                    }),
-                  });
-
-                  if (!response.ok) throw new Error('Failed to run search');
-                } catch (error) {
-                  console.error('Error running search:', error);
-                }
-              }}
-              className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
-                hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
-                shadow-sm hover:shadow active:translate-y-[1px]"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Run All
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowRunDropdown(!showRunDropdown)}
+                className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium
+                  hover:bg-indigo-600 transition-colors duration-150 flex items-center gap-2
+                  shadow-sm hover:shadow active:translate-y-[1px]"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Run
+              </button>
+              
+              {showRunDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[103]">
+                  <button
+                    onClick={handleRunFind}
+                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 
+                      transition-colors duration-150 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Run Find
+                  </button>
+                  <button
+                    onClick={handleRunCells}
+                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 
+                      transition-colors duration-150 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h7" />
+                    </svg>
+                    Run Cells
+                  </button>
+                </div>
+              )}
+            </div>
             {isExpanded && (
               <button
                 onClick={() => setIsExpanded(false)}
