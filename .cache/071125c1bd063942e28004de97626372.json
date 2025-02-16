@@ -1,0 +1,57 @@
+{
+  "data": {
+    "status": "complete",
+    "task_id": "00bca0a2-4b61-42c0-9d53-7b3006ba18d8",
+    "runner": "rhodium",
+    "run_id": "5f3a3738-1b76-d258-ec70-255ec1c5c2f8",
+    "input": {
+      "arguments": {
+        "query": "Input"
+      },
+      "tool_call_results": [],
+      "runner": "rhodium",
+      "runner_params": null,
+      "callback_webhook": null,
+      "enqueue_run": false,
+      "metadata": {}
+    },
+    "output": {
+      "results": [
+        "Logitech",
+        "Microsoft",
+        "Razer",
+        "Corsair",
+        "SteelSeries",
+        "Advanced Input Systems",
+        "P.I. Engineering",
+        "Genovation",
+        "Resources and actions used to achieve objectives",
+        "Raw materials",
+        "Employee time and labor",
+        "Tools and equipment",
+        "Financial investments",
+        "Company policies",
+        "Computer input devices",
+        "Data input systems",
+        "Industrial control inputs",
+        "Medical instrumentation inputs",
+        "Machine control systems"
+      ]
+    },
+    "tool_call_requests": null,
+    "modified_at": "2025-02-16T09:52:00.997441",
+    "warnings": null,
+    "webhook_status": null
+  },
+  "url": "https://api.parallel.ai/v0/tasks/00bca0a2-4b61-42c0-9d53-7b3006ba18d8/executions",
+  "options": {
+    "method": "POST",
+    "headers": {
+      "x-api-key": "OGamMpbMwucXEXIMHAn94NcdYfp2rj479A19rhHzgKzbZo56",
+      "Content-Type": "application/json"
+    },
+    "body": "{\"arguments\":{\"query\":\"Input\"}}"
+  },
+  "timestamp": "2025-02-16T09:52:01.265Z",
+  "expiresAt": "2025-02-17T09:52:01.265Z"
+}

@@ -318,7 +318,7 @@ export const SingleSpreadsheet = forwardRef<
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: title,
+          query: headers[0],
           sheet_level: true
         }),
       });
