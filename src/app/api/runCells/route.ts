@@ -17,6 +17,8 @@ export async function POST(req: Request) {
       results[colName] = `Processed ${input} for ${colName}`;
     });
 
+    // await new Promise(resolve => setTimeout(resolve, 1000));
+
     return NextResponse.json({
       success: true,
       results,

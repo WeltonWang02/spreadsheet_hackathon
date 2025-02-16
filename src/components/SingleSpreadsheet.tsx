@@ -60,6 +60,7 @@ export const SingleSpreadsheet = forwardRef<
   const [isRunningFind, setIsRunningFind] = useState(false);
   const [isRunningCells, setIsRunningCells] = useState(false);
   const [aggregationPrompt, setAggregationPrompt] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useImperativeHandle(ref, () => ({
     handleRunFind,
@@ -130,6 +131,7 @@ export const SingleSpreadsheet = forwardRef<
   const handleRunAggregation = async () => {
     if (!isAggregation) return;
     setIsRunningAggregation(true);
+    setIsLoading(true);
 
     try {
       // Get all sheets from the source 3D spreadsheet
@@ -197,6 +199,7 @@ export const SingleSpreadsheet = forwardRef<
       console.error('Error running aggregation:', error);
     } finally {
       setIsRunningAggregation(false);
+      setIsLoading(false);
     }
   };
 
@@ -307,6 +310,7 @@ export const SingleSpreadsheet = forwardRef<
   const handleRunFind = async () => {
     if (isRunningFind) return;
     setIsRunningFind(true);
+    setIsLoading(true);
     try {
       const response = await fetch('/api/findall', {
         method: 'POST',
@@ -345,12 +349,14 @@ export const SingleSpreadsheet = forwardRef<
     } finally {
       setIsRunningFind(false);
       setShowRunDropdown(false);
+      setIsLoading(false);
     }
   };
 
   const handleRunCells = async () => {
     if (isRunningCells) return;
     setIsRunningCells(true);
+    setIsLoading(true);
     try {
       // For each row, make a runCells API call
       const promises = data.map(async (row, rowIndex) => {
@@ -401,6 +407,7 @@ export const SingleSpreadsheet = forwardRef<
     } finally {
       setIsRunningCells(false);
       setShowRunDropdown(false);
+      setIsLoading(false);
     }
   };
 
@@ -571,6 +578,7 @@ export const SingleSpreadsheet = forwardRef<
             onDeleteColumn={handleDeleteColumn}
             onDeleteRow={handleDeleteRow}
             firstColumnWidth="min-w-[8rem] max-w-[8rem]"
+            isLoading={isLoading}
           />
         </div>
       </div>

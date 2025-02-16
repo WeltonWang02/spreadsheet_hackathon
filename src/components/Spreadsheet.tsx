@@ -26,6 +26,7 @@ interface SpreadsheetProps {
   renderRowPrefix?: (rowIndex: number) => React.ReactNode;
   firstColumnWidth?: string;
   multiline?: boolean;
+  isLoading?: boolean;
 }
 
 export default function Spreadsheet({ 
@@ -45,7 +46,8 @@ export default function Spreadsheet({
   onDeleteRow,
   renderRowPrefix,
   firstColumnWidth,
-  multiline
+  multiline,
+  isLoading
 }: SpreadsheetProps) {
   const [editingHeader, setEditingHeader] = useState<number | null>(null);
   const [cornerValue, setCornerValue] = useState("ID");
@@ -145,6 +147,12 @@ export default function Spreadsheet({
     return () => document.removeEventListener('click', handleClickOutside);
   }, [contextMenu]);
 
+  const LoadingSpinner = () => (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="w-4 h-4 border-2 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
+    </div>
+  );
+
   return (
     <div className="w-full">
       <table className="border-collapse w-full">
@@ -206,7 +214,7 @@ export default function Spreadsheet({
                   key={colIndex}
                   className={`
                     ${colIndex === 0 ? firstColumnWidth || 'min-w-[12rem]' : 'w-48'} 
-                    h-8 border border-gray-200 px-2 
+                    h-8 border border-gray-200 px-2 relative
                     ${colIndex === 0 ? 'bg-gray-50 sticky left-0 z-10' : ''}
                     ${multiline ? 'h-auto min-h-[8rem]' : 'h-8'}
                   `}
@@ -216,16 +224,23 @@ export default function Spreadsheet({
                       value={row[colIndex]?.value || ''}
                       onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
                       className={`w-full h-full min-h-[8rem] focus:outline-none focus:ring-1 focus:ring-indigo-400/30
-                        text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''} resize-none p-2`}
+                        text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''} resize-none p-2
+                        ${isLoading ? 'opacity-50' : ''}`}
+                      disabled={isLoading}
                     />
                   ) : (
-                    <input
-                      type="text"
-                      value={row[colIndex]?.value || ''}
-                      onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
-                      className={`w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
-                        text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''}`}
-                    />
+                    <>
+                      <input
+                        type="text"
+                        value={row[colIndex]?.value || ''}
+                        onChange={(e) => onCellChange?.(rowIndex, colIndex, e.target.value)}
+                        className={`w-full h-full focus:outline-none focus:ring-1 focus:ring-indigo-400/30
+                          text-gray-700 bg-transparent ${colIndex === 0 ? 'font-medium' : ''}
+                          ${isLoading ? 'opacity-50' : ''}`}
+                        disabled={isLoading}
+                      />
+                      {isLoading && <LoadingSpinner />}
+                    </>
                   )}
                 </td>
               ))}

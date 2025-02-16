@@ -32,6 +32,7 @@ const ThreeDSpreadsheet = forwardRef<
   const [isRunningCells, setIsRunningCells] = useState(false);
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [sidebarItems, setSidebarItems] = useState<string[]>([]);
+  const [loadingSheets, setLoadingSheets] = useState<{ [key: number]: boolean }>({});
   
   // Initialize sheet data and names from source data
   useEffect(() => {
@@ -204,12 +205,13 @@ const ThreeDSpreadsheet = forwardRef<
 
   const handleRunFind = async () => {
     setIsRunningFind(true);
+    setLoadingSheets(sheetData.reduce((acc, _, idx) => ({ ...acc, [idx]: true }), {}));
     try {
       // For each sheet, make a findall API call
       const promises = data.map(async (sheet, sheetIndex) => {
         // Get the first column value as the query
         const firstColumnCell = sheet.prevRow.find(cell => cell.col === 0);
-        if (!firstColumnCell) return;
+        if (!firstColumnCell) return null;
 
         const response = await fetch('/api/findall', {
           method: 'POST',
@@ -226,44 +228,53 @@ const ThreeDSpreadsheet = forwardRef<
         
         const { results } = await response.json();
         
-        // Update the sheet with results
-        const newSheetData = [...sheetData];
-        if (!newSheetData[sheetIndex]) {
-          newSheetData[sheetIndex] = [];
-        }
-
         // Create rows from the results
-        results.forEach((result: string, rowIndex: number) => {
-          if (!newSheetData[sheetIndex][rowIndex]) {
-            newSheetData[sheetIndex][rowIndex] = headers.map((_, colIndex) => ({
-              value: colIndex === 0 ? result : '',
-              row: rowIndex,
-              col: colIndex
-            }));
-          } else {
-            newSheetData[sheetIndex][rowIndex][0].value = result;
-          }
-        });
+        const newRows = results.map((result: string, rowIndex: number) => 
+          headers.map((_, colIndex) => ({
+            value: colIndex === 0 ? result : '',
+            row: rowIndex,
+            col: colIndex
+          }))
+        );
 
-        setSheetData(newSheetData);
+        return {
+          prevRow: sheet.prevRow,
+          data: newRows
+        };
       });
 
-      await Promise.all(promises);
+      const updates = (await Promise.all(promises)).filter(Boolean);
+      
+      // Update the sheet data
+      const newSheetData = updates.map(update => update?.data || []);
+      setSheetData(newSheetData);
+
+      // Call onDataChange with the complete data structure
+      if (onDataChange) {
+        const newData = updates.map(update => ({
+          prevRow: update?.prevRow || [],
+          data: update?.data || []
+        }));
+        onDataChange(newData);
+      }
     } catch (error) {
       console.error('Error running search:', error);
+    } finally {
+      setIsRunningFind(false);
+      setShowRunDropdown(false);
+      setLoadingSheets({});
     }
-    setShowRunDropdown(false);
-    setIsRunningFind(false);
   };
 
   const handleRunCells = async () => {
     setIsRunningCells(true);
+    setLoadingSheets(sheetData.reduce((acc, _, idx) => ({ ...acc, [idx]: true }), {}));
     try {
       // For each sheet, make a runCells API call
-      const promises = sheetData.map(async (sheet, sheetIndex) => {
+      const promises = data.map(async (sheet, sheetIndex) => {
         // Get the first column value as input from sourceData
-        const firstColumnCell = data[sheetIndex]?.prevRow.find(cell => cell.col === 0);
-        if (!firstColumnCell) return;
+        const firstColumnCell = sheet.prevRow.find(cell => cell.col === 0);
+        if (!firstColumnCell) return null;
 
         // Create columns object from headers
         const columns = headers.reduce((acc, header, index) => {
@@ -272,7 +283,7 @@ const ThreeDSpreadsheet = forwardRef<
         }, {} as { [key: string]: string });
 
         // For each row in the sheet, make a runCells API call
-        const rowPromises = sheet.map(async (row, rowIndex) => {
+        const rowPromises = sheetData[sheetIndex].map(async (row, rowIndex) => {
           const response = await fetch('/api/runCells', {
             method: 'POST',
             headers: {
@@ -286,41 +297,46 @@ const ThreeDSpreadsheet = forwardRef<
 
           if (!response.ok) throw new Error('Failed to run cells');
           
-          const data = await response.json();
+          const responseData = await response.json();
           
-          // Update the row with results
-          if (data.success && data.results) {
-            const newSheetData = [...sheetData];
-            if (!newSheetData[sheetIndex][rowIndex]) {
-              newSheetData[sheetIndex][rowIndex] = headers.map((_, colIndex) => ({
-                value: '',
-                row: rowIndex,
-                col: colIndex
-              }));
-            }
-            
-            Object.entries(data.results).forEach(([colName, value], colIndex) => {
-              if (colIndex > 0) { // Skip first column
-                newSheetData[sheetIndex][rowIndex][colIndex] = {
-                  value: value as string,
-                  row: rowIndex,
-                  col: colIndex
-                };
-              }
-            });
-            setSheetData(newSheetData);
+          if (responseData.success && responseData.results) {
+            return Object.entries(responseData.results).map(([colName, value], colIndex) => ({
+              value: colIndex === 0 ? row[0]?.value || firstColumnCell.value : value as string,
+              row: rowIndex,
+              col: colIndex
+            }));
           }
+          return row;
         });
 
-        await Promise.all(rowPromises);
+        const newRows = await Promise.all(rowPromises);
+        return {
+          prevRow: sheet.prevRow,
+          data: newRows
+        };
       });
 
-      await Promise.all(promises);
+      const updates = (await Promise.all(promises)).filter(Boolean);
+      
+      // Update the sheet data
+      const newSheetData = updates.map(update => update?.data || []);
+      setSheetData(newSheetData);
+
+      // Call onDataChange with the complete data structure
+      if (onDataChange) {
+        const newData = updates.map(update => ({
+          prevRow: update?.prevRow || [],
+          data: update?.data || []
+        }));
+        onDataChange(newData);
+      }
     } catch (error) {
       console.error('Error running cells:', error);
+    } finally {
+      setIsRunningCells(false);
+      setShowRunDropdown(false);
+      setLoadingSheets({});
     }
-    setShowRunDropdown(false);
-    setIsRunningCells(false);
   };
 
   useImperativeHandle(ref, () => ({
@@ -531,6 +547,7 @@ const ThreeDSpreadsheet = forwardRef<
                         onDeleteColumn={(colIndex) => handleDeleteColumn(actualIndex, colIndex)}
                         onDeleteRow={(rowIndex) => handleDeleteRow(actualIndex, rowIndex)}
                         firstColumnWidth="min-w-[8rem] max-w-[8rem]"
+                        isLoading={loadingSheets[actualIndex]}
                       />
                     </div>
                   </div>
