@@ -27,11 +27,12 @@ export default function ThreeDSpreadsheet({
     // Create sheet data for each source row
     const newSheetData = sourceData.map(row => {
       // Create initial data for the sheet with the source row
-      return [row.map(cell => ({
-        value: cell.value,
-        row: 0,
-        col: cell.col
-      }))];
+    //   return [row.map(cell => ({
+    //     value: cell.value,
+    //     row: 0,
+    //     col: cell.col
+    //   }))];
+    return [];
     });
 
     setSheetData(newSheetData);
