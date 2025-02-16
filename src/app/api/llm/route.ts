@@ -17,11 +17,11 @@ export async function POST(req: Request) {
         ${prompt}
 
         Inputs: 
-        ${input}
+        ${JSON.stringify(input)}
 
         Follow the instructions in the prompt and return the response using the context as described. You should substitue the variables when you can / with the provided context.
       `
-      const llmResponse = await llm(processedPrompt, "o3-mini");  
+      const llmResponse = await llm(processedPrompt, "gpt-4o");  
 
       return llmResponse;
     }));

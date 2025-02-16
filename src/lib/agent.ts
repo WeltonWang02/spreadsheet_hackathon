@@ -50,7 +50,7 @@ interface CacheEntry {
   expiresAt: string;
 }
 
-const PARALLEL_URL = "https://api.parallel.ai";
+const PARALLEL_URL = "https://localhost:8000/api";
 const PARALLEL_API_KEY = process.env.PARALLEL_API_KEY;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
